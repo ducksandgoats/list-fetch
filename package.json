@@ -1,6 +1,6 @@
 {
   "name": "list-fetch",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "coming soon",
   "main": "index.js",
   "scripts": {
@@ -11,8 +11,8 @@
     "url": "git+https://github.com/ducksandgoats/list-fetch.git"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
+  "author": "ducksandgoats",
   "bugs": {
     "url": "https://github.com/ducksandgoats/list-fetch/issues"
   },
