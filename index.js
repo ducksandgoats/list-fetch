@@ -109,7 +109,7 @@ module.exports = async function makeBTFetch (opts = {}) {
 
                   return {statusCode: 206, headers: {'Content-Length': `${length}`, 'Content-Range': `bytes ${start}-${end}/${foundFile.length}`, 'Content-Type': getMimeType(mid.mainPath)}, data: streamToIterator(foundFile.createReadStream({ start, end }))}
                 } else {
-                  return {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>could not find partial content for ${foundFile.name}</p></div></body></html>`] : [JSON.stringify(`could not find partial content for ${foundFile.name}`)]}
+                  return {statusCode: 200, headers: {'Content-Type': getMimeType(mid.mainPath), 'Content-Length': String(foundFile.length)}, data: streamToIterator(foundFile.createReadStream())}
                 }
               } else {
                 return {statusCode: 200, headers: {'Content-Type': getMimeType(mid.mainPath), 'Content-Length': String(foundFile.length)}, data: streamToIterator(foundFile.createReadStream())}
