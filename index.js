@@ -4,7 +4,7 @@ const mime = require('mime/lite')
 const parseRange = require('range-parser')
 const Torrentz = require('torrentz')
 
-module.exports = function makeBTFetch (opts = {}) {
+module.exports = async function makeBTFetch (opts = {}) {
   const DEFAULT_OPTS = {timeout: 60000}
   const finalOpts = { ...DEFAULT_OPTS, ...opts }
   const checkHash = /^[a-fA-F0-9]{40}$/
@@ -14,7 +14,7 @@ module.exports = function makeBTFetch (opts = {}) {
   const encodeType = '~'
   const hostType = '_'
 
-  const app = new Torrentz(finalOpts)
+  const app = await new Promise((resolve) => {if(finalOpts.torrentz){resolve(finalOpts.torrentz)}else{resolve(new Torrentz(finalOpts))}})
 
   // const prog = new Map()
 
