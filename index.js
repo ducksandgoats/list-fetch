@@ -5,7 +5,7 @@ const parseRange = require('range-parser')
 const Torrentz = require('torrentz')
 
 module.exports = async function makeBTFetch (opts = {}) {
-  const DEFAULT_OPTS = {timeout: 60000}
+  const DEFAULT_OPTS = {}
   const finalOpts = { ...DEFAULT_OPTS, ...opts }
   const checkHash = /^[a-fA-F0-9]{40}$/
   const checkAddress = /^[a-fA-F0-9]{64}$/
