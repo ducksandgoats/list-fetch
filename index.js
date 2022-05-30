@@ -180,6 +180,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         if (error) {
           reject(error)
         } else {
+          app.checkId.clear()
           clearInterval(app.updateRoutine)
           resolve()
         }
