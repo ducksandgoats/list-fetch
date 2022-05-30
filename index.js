@@ -11,7 +11,7 @@ module.exports = async function makeBTFetch (opts = {}) {
   const checkAddress = /^[a-fA-F0-9]{64}$/
   const checkTitle = /^[a-zA-Z0-9]/
   const SUPPORTED_METHODS = ['GET', 'PUT', 'DELETE', 'HEAD']
-  const encodeType = '~'
+  const encodeType = 'hex'
   const hostType = '_'
 
   const app = await new Promise((resolve) => {if(finalOpts.torrentz){resolve(finalOpts.torrentz)}else{resolve(new Torrentz(finalOpts))}})
@@ -49,7 +49,7 @@ module.exports = async function makeBTFetch (opts = {}) {
 
     try {
       const { hostname, pathname, protocol, searchParams } = new URL(url)
-      const mainHostname = hostname && hostname[0] === encodeType ? Buffer.from(hostname.slice(1), 'hex').toString('utf-8') : hostname
+      const mainHostname = hostname && hostname.startsWith(encodeType) ? Buffer.from(hostname.slice(encodeType.length), 'hex').toString('utf-8') : hostname
 
       if (protocol !== 'bt:') {
         return { statusCode: 409, headers: {}, data: ['wrong protocol'] }
