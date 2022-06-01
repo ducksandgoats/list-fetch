@@ -1,6 +1,6 @@
 {
   "name": "list-fetch",
-  "version": "15.0.8",
+  "version": "15.0.9",
   "description": "coming soon",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "mime": "^3.0.0",
     "range-parser": "^1.2.1",
     "stream-async-iterator": "^2.0.0",
-    "torrentz": "^2.0.2"
+    "torrentz": "^2.0.3"
   },
   "devDependencies": {
     "form-data": "^4.0.0",
