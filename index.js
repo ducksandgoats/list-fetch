@@ -139,7 +139,7 @@ module.exports = async function makeBTFetch (opts = {}) {
               return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>secret: ${torrentData.secret}</p></div></body></html>`] : [JSON.stringify({ address: torrentData.address, secret: torrentData.secret })]}
             } else {
               const torrentData = await app.publishTorrent(false, mid.mainHost, count, reqHeaders, body, reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) * 1000 : 0, reqHeaders['x-empty'] ? JSON.parse(reqHeaders['x-empty']) : null)
-              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>infohash: ${torrentData.infohash}</p><p>title: ${torrentData.title}</p></div></body></html>`] : [JSON.stringify({ hash: torrentData.hash, title: torrentData.title })]}
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>infohash: ${torrentData.infohash}</p><p>title: ${torrentData.title}</p></div></body></html>`] : [JSON.stringify({ infohash: torrentData.infohash, title: torrentData.title })]}
             }
           }
         }
