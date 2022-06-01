@@ -134,8 +134,13 @@ module.exports = async function makeBTFetch (opts = {}) {
           if((!reqHeaders['content-type'] || !reqHeaders['content-type'].includes('multipart/form-data')) || ((reqHeaders['x-empty']) && (reqHeaders['x-empty'] !== 'false' && reqHeaders['x-empty'] !== 'true')) || !body){
             return {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>must have X-Update header which must be set to true or false, must have Content-Type header set to multipart/form-data, must have body, also must have X-Authentication header for BEP46 torrents</p></div></body></html>'] : [JSON.stringify('must have X-Update header which must be set to true or false, must have Content-Type header set to multipart/form-data, must have body')]}
           } else {
-            const torrentData = await app.publishTorrent(Boolean(reqHeaders['x-authentication']), reqHeaders['x-authentication'] ? {address: mid.mainHost, secret: reqHeaders['x-authentication']} : mid.mainHost, count, reqHeaders, body, reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) * 1000 : 0, reqHeaders['x-empty'] ? JSON.parse(reqHeaders['x-empty']) : null)
-            return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>secret: ${torrentData.secret}</p></div></body></html>`] : [JSON.stringify({ address: torrentData.address, secret: torrentData.secret })]}
+            if(reqHeaders['x-authentication']){
+              const torrentData = await app.publishTorrent(true, {address: mid.mainHost, secret: reqHeaders['x-authentication']}, count, reqHeaders, body, reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) * 1000 : 0, reqHeaders['x-empty'] ? JSON.parse(reqHeaders['x-empty']) : null)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>secret: ${torrentData.secret}</p></div></body></html>`] : [JSON.stringify({ address: torrentData.address, secret: torrentData.secret })]}
+            } else {
+              const torrentData = await app.publishTorrent(false, mid.mainHost, count, reqHeaders, body, reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) * 1000 : 0, reqHeaders['x-empty'] ? JSON.parse(reqHeaders['x-empty']) : null)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>infohash: ${torrentData.infohash}</p><p>title: ${torrentData.title}</p></div></body></html>`] : [JSON.stringify({ hash: torrentData.hash, title: torrentData.title })]}
+            }
           }
         }
       } else if(method === 'DELETE'){
