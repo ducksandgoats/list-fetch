@@ -158,11 +158,10 @@ module.exports = async function makeBTFetch (opts = {}) {
         return { statusCode: 400, headers: { 'Content-Type': mainRes }, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>method is not supported</p></div></body></html>'] : [JSON.stringify('method is not supported')] }
       }
     } catch (e) {
-      if(e.name === 'ErrorTimeout'){
-        return { statusCode: 408, headers: {}, data: [e.stack] }
-      } else {
-        return { statusCode: 500, headers: {}, data: [e.stack] }
-      }
+      const mainReq = reqHeaders.accept && reqHeaders.accept.includes('text/html')
+      const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
+      const useCode = e.name === 'ErrorTimeout' ? 408 : 500
+      return { statusCode: useCode, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${e.name}</title></head><body><div><p>${e.stack}</p></div></body></html>`] : [JSON.stringify(e.stack)]}
     }
   })
 
