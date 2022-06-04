@@ -98,7 +98,7 @@ module.exports = async function makeBTFetch (opts = {}) {
           const torrentData = await app.loadTorrent(mid.mainHost, reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) * 1000 : 0)
           let foundFile = null
           if (mid.mainPath === '/') {
-            return {statusCode: 200, headers: {'Content-Type': mainRes, 'Content-Length': String(torrentData.length)}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div>${torrentData.files.map(file => { return `<p><a href="${file.urlPath}">${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.files.map(file => { return `${file.urlPath}` }))]}
+            return {statusCode: 200, headers: {'Content-Type': mainRes, 'Content-Length': String(torrentData.length)}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><div>info: ${torrentData.infohash}</div><div>${torrentData.files.map(file => { return `<p><a href="${file.urlPath}">${file.name}</a></p>` })}</div></div></body></html>`] : [JSON.stringify({info: torrentData.infohash, files: torrentData.files.map(file => { return `${file.urlPath}` })})]}
           } else {
             foundFile = torrentData.files.find(file => { return mid.mainPath === file.urlPath })
             if (foundFile) {
