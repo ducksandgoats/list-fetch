@@ -22,7 +22,7 @@
     "mime": "^3.0.0",
     "range-parser": "^1.2.1",
     "stream-async-iterator": "^2.0.0",
-    "torrentz": "^3.0.3"
+    "torrentz": "^3.0.4"
   },
   "devDependencies": {
     "form-data": "^4.0.0",
