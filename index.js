@@ -32,7 +32,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     // if(pathname){
     //     console.log(decodeURIComponent(pathname))
     // }
-    const mainPath = pathname
+    const mainPath = decodeURIComponent(pathname)
     return { mainQuery, mainHost, mainPath }
   }
 
