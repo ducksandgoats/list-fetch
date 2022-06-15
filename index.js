@@ -12,7 +12,7 @@ module.exports = async function makeBTFetch (opts = {}) {
   const checkTitle = /^[a-zA-Z0-9]/
   const SUPPORTED_METHODS = ['GET', 'PUT', 'DELETE', 'HEAD']
   const encodeType = 'hex'
-  const hostType = '_'
+  const hostType = '~'
 
   const app = await new Promise((resolve) => {if(finalOpts.torrentz){resolve(finalOpts.torrentz)}else{resolve(new Torrentz(finalOpts))}})
 
