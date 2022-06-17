@@ -66,7 +66,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         if (mid.mainQuery) {
           return { statusCode: 400, headers: {'Content-Length': '0'}, data: [] }
         } else {
-          const torrentData = await app.loadTorrent(mid.mainHost, mid.mainPath, {timeout: reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) : 0})
+          const torrentData = await app.loadTorrent(mid.mainHost, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0})
           if (torrentData) {
             if(torrentData.infoHash){
               const useHeaders = {}
@@ -94,7 +94,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         if (mid.mainQuery) {
           return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>Thank you for using Bittorrent-Fetch-Fetch</p></div></body></html>'] : [JSON.stringify('Thank you for using BT-Fetch')]}
         } else {
-          const torrentData = await app.loadTorrent(mid.mainHost, mid.mainPath, {timeout: reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) : 0})
+          const torrentData = await app.loadTorrent(mid.mainHost, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0})
           if(torrentData){
             if(torrentData.infoHash){
               return {statusCode: 200, headers: {'Content-Type': mainRes, 'Content-Length': String(torrentData.length)}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><h1>${torrentData.infohash}</h1>${torrentData.files.map(file => { return `<p><a href="${file.urlPath}">${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify({infohash: torrentData.infohash, files: torrentData.files.map(file => { return `${file.urlPath}` })})]}
@@ -124,17 +124,17 @@ module.exports = async function makeBTFetch (opts = {}) {
           return {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainHost}</title></head><body><div><p>must have a body</p></div></body></html>`] : [JSON.stringify('must have a body')]}
         } else {
           const useOpts = {
-            count: reqHeaders['x-version'] ? Number(reqHeaders['x-version']) : null,
-            timeout: reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) : 0,
-            opt: reqHeaders['x-opt'] ? JSON.parse(reqHeaders['x-opt']) : null
+            count: reqHeaders['x-version'] || searchParams.has('x-version') ? Number(reqHeaders['x-version'] || searchParams.get('x-version')) : null,
+            timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0,
+            opt: reqHeaders['x-opt'] || searchParams.has('x-opt') ? JSON.parse(reqHeaders['x-opt'] || decodeURIComponent(searchParams.get('x-opt'))) : null
 
           }
           if (mid.mainQuery) {
             const torrentData = await app.publishTorrent({address: null, secret: null}, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
             return {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>infohash: ${torrentData.infohash}</p><p>sequence: ${torrentData.sequence}</p><p>secret: ${torrentData.secret}</p></div></body></html>`] : [JSON.stringify({ address: torrentData.address, infohash: torrentData.infohash, sequence: torrentData.sequence, secret: torrentData.secret })]}
           } else {
-            if(reqHeaders['x-authentication']){
-            const torrentData = await app.publishTorrent({address: mid.mainHost, secret: reqHeaders['x-authentication']}, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
+            if(reqHeaders['x-authentication'] || searchParams.has('x-authentication')){
+            const torrentData = await app.publishTorrent({address: mid.mainHost, secret: reqHeaders['x-authentication'] || searchParams.get('x-authentication')}, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
             return {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>infohash: ${torrentData.infohash}</p><p>sequence: ${torrentData.sequence}</p><p>secret: ${torrentData.secret}</p></div></body></html>`] : [JSON.stringify({ address: torrentData.address, infohash: torrentData.infohash, sequence: torrentData.sequence, secret: torrentData.secret })]}
             } else {
               const torrentData = await app.publishTorrent({title: mid.mainHost}, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
@@ -148,7 +148,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         if (mid.mainQuery) {
           return {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>must not use underscore</p></div></body></html>'] : [JSON.stringify('must not use udnerscore')]}
         } else {
-          const torrentData = await app.shredTorrent(mid.mainHost, mid.mainPath, {timeout: reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0' ? Number(reqHeaders['x-timer']) : 0})
+          const torrentData = await app.shredTorrent(mid.mainHost, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0})
           return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainHost}${mid.mainPath}</title></head><body><div><p>${torrentData}</p></div></body></html>`] : [JSON.stringify(torrentData)]}
         }
       } else {
