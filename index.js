@@ -49,7 +49,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     const { url, method, headers: reqHeaders, body } = request
 
     try {
-      const { hostname, pathname, protocol, searchParams } = new URL(url)
+      const { hostname, pathname, protocol, search, searchParams } = new URL(url)
       const mainHostname = hostname && hostname.startsWith(encodeType) ? Buffer.from(hostname.slice(encodeType.length), 'hex').toString('utf-8') : hostname
 
       if (protocol !== 'bt:') {
@@ -61,6 +61,9 @@ module.exports = async function makeBTFetch (opts = {}) {
       }
 
       const mid = formatReq(decodeURIComponent(mainHostname), decodeURIComponent(pathname))
+
+      const mainReq = !reqHeaders.accept || !reqHeaders.accept.includes('application/json')
+      const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
       if(method === 'HEAD'){
         if (mid.mainQuery) {
@@ -89,8 +92,6 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       } else if(method === 'GET'){
         const mainRange = reqHeaders.Range || reqHeaders.range
-        const mainReq = reqHeaders.accept && reqHeaders.accept.includes('text/html')
-        const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
         if (mid.mainQuery) {
           return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>Thank you for using Bittorrent-Fetch-Fetch</p></div></body></html>'] : [JSON.stringify('Thank you for using BT-Fetch')]}
         } else {
@@ -114,12 +115,10 @@ module.exports = async function makeBTFetch (opts = {}) {
               }
             }
           } else {
-            return {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainHost}</title></head><body><div><p>could not find the file</p></div></body></html>`] : [JSON.stringify('could not find the file')]}
+            return {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainHost}</title></head><body><div><p>could not find the data</p></div></body></html>`] : [JSON.stringify('could not find the data')]}
           }
         }
       } else if(method === 'PUT'){
-        const mainReq = reqHeaders.accept && reqHeaders.accept.includes('text/html')
-        const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
         if(!body){
           return {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainHost}</title></head><body><div><p>must have a body</p></div></body></html>`] : [JSON.stringify('must have a body')]}
         } else {
@@ -127,7 +126,6 @@ module.exports = async function makeBTFetch (opts = {}) {
             count: reqHeaders['x-version'] || searchParams.has('x-version') ? Number(reqHeaders['x-version'] || searchParams.get('x-version')) : null,
             timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0,
             opt: reqHeaders['x-opt'] || searchParams.has('x-opt') ? JSON.parse(reqHeaders['x-opt'] || decodeURIComponent(searchParams.get('x-opt'))) : null
-
           }
           if (mid.mainQuery) {
             const torrentData = await app.publishTorrent({address: null, secret: null}, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
@@ -143,8 +141,6 @@ module.exports = async function makeBTFetch (opts = {}) {
           }
         }
       } else if(method === 'DELETE'){
-        const mainReq = reqHeaders.accept && reqHeaders.accept.includes('text/html')
-        const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
         if (mid.mainQuery) {
           return {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>must not use underscore</p></div></body></html>'] : [JSON.stringify('must not use udnerscore')]}
         } else {
@@ -152,12 +148,10 @@ module.exports = async function makeBTFetch (opts = {}) {
           return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainHost}${mid.mainPath}</title></head><body><div><p>${torrentData}</p></div></body></html>`] : [JSON.stringify(torrentData)]}
         }
       } else {
-        const mainReq = reqHeaders.accept && reqHeaders.accept.includes('text/html')
-        const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
         return { statusCode: 400, headers: { 'Content-Type': mainRes }, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>method is not supported</p></div></body></html>'] : [JSON.stringify('method is not supported')] }
       }
     } catch (e) {
-      const mainReq = reqHeaders.accept && reqHeaders.accept.includes('text/html')
+      const mainReq = !reqHeaders.accept || !reqHeaders.accept.includes('application/json')
       const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
       const useCode = e.name === 'ErrorTimeout' ? 408 : 500
       return { statusCode: useCode, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${e.name}</title></head><body><div><p>${e.stack}</p></div></body></html>`] : [JSON.stringify(e.stack)]}
