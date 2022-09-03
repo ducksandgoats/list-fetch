@@ -100,18 +100,24 @@ module.exports = async function makeBTFetch (opts = {}) {
             if(torrentData.infoHash){
               return {statusCode: 200, headers: {'Content-Type': mainRes, 'Content-Length': String(torrentData.length)}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><h1>${torrentData.infohash}</h1>${torrentData.files.map(file => { return `<p><a href="${file.urlPath}">${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.files.map(file => { return file.urlPath }))]}
             } else {
-              if (mainRange) {
-                const ranges = parseRange(torrentData.length, mainRange)
-                if (ranges && ranges.length && ranges.type === 'bytes') {
-                  const [{ start, end }] = ranges
-                  const length = (end - start + 1)
+              if(Array.isArray(torrentData)){
+                let checkLength = 0
+                torrentData.forEach((data) => {checkLength = checkLength + data.length})
+                return {statusCode: 200, headers: {'Content-Type': mainRes, 'Content-Length': String(checkLength)}, data: mainReq ? [`<html><head><title>Directory</title></head><body><div><h1>Directory</h1><p><a href="../">..</a></p>${torrentData.map(file => { return `<p><a href="${file.urlPath}">${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.map(file => { return file.urlPath }))]}
+              } else {
+                if (mainRange) {
+                  const ranges = parseRange(torrentData.length, mainRange)
+                  if (ranges && ranges.length && ranges.type === 'bytes') {
+                    const [{ start, end }] = ranges
+                    const length = (end - start + 1)
 
-                  return {statusCode: 206, headers: {'Content-Length': `${length}`, 'Content-Range': `bytes ${start}-${end}/${torrentData.length}`, 'Content-Type': getMimeType(torrentData.path)}, data: streamToIterator(torrentData.createReadStream({ start, end }))}
+                    return {statusCode: 206, headers: {'Content-Length': `${length}`, 'Content-Range': `bytes ${start}-${end}/${torrentData.length}`, 'Content-Type': getMimeType(torrentData.path)}, data: streamToIterator(torrentData.createReadStream({ start, end }))}
+                  } else {
+                    return {statusCode: 416, headers: {'Content-Type': getMimeType(torrentData.path), 'Content-Length': String(torrentData.length)}, data: ['range is not satisfiable']}
+                  }
                 } else {
                   return {statusCode: 200, headers: {'Content-Type': getMimeType(torrentData.path), 'Content-Length': String(torrentData.length)}, data: streamToIterator(torrentData.createReadStream())}
                 }
-              } else {
-                return {statusCode: 200, headers: {'Content-Type': getMimeType(torrentData.path), 'Content-Length': String(torrentData.length)}, data: streamToIterator(torrentData.createReadStream())}
               }
             }
           } else {
