@@ -7,9 +7,9 @@ const Torrentz = require('torrentz')
 module.exports = async function makeBTFetch (opts = {}) {
   const DEFAULT_OPTS = {}
   const finalOpts = { ...DEFAULT_OPTS, ...opts }
-  const checkHash = /^[a-fA-F0-9]{40}$/
-  const checkAddress = /^[a-fA-F0-9]{64}$/
-  const checkTitle = /^[a-zA-Z0-9]/
+  // const checkHash = /^[a-fA-F0-9]{40}$/
+  // const checkAddress = /^[a-fA-F0-9]{64}$/
+  // const checkTitle = /^[a-zA-Z0-9]/
   const SUPPORTED_METHODS = ['GET', 'POST', 'DELETE', 'HEAD']
   const encodeType = 'hex'
   const hostType = '_'
@@ -56,7 +56,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         return { statusCode: 409, headers: {}, data: ['wrong protocol'] }
       } else if (!method || !SUPPORTED_METHODS.includes(method)) {
         return { statusCode: 409, headers: {}, data: ['something wrong with method'] }
-      } else if ((!mainHostname) || (mainHostname.length === 1 && mainHostname !== hostType) || (mainHostname.length !== 1 && !checkTitle.test(mainHostname) && !checkHash.test(mainHostname) && !checkAddress.test(mainHostname))) {
+      } else if ((!mainHostname) || (mainHostname.length === 1 && mainHostname !== hostType)) {
         return { statusCode: 409, headers: {}, data: ['something wrong with hostname'] }
       }
 
@@ -78,6 +78,10 @@ module.exports = async function makeBTFetch (opts = {}) {
               useHeaders['Accept-Ranges'] = 'bytes'
               useHeaders['X-Downloaded'] = `${torrentData.downloaded}`
               return {statusCode: 200, headers: useHeaders, data: []}
+            } else if(Array.isArray(torrentData)){
+              let checkLength = 0
+              torrentData.forEach((data) => {checkLength = checkLength + data.length})
+              return {statusCode: 200, headers: {'Content-Length': String(checkLength)}, data: []}
             } else {
               const useHeaders = {}
               useHeaders['Content-Type'] = getMimeType(torrentData.path)
@@ -150,7 +154,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         if (mid.mainQuery) {
           return {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>must not use underscore</p></div></body></html>'] : [JSON.stringify('must not use underscore')]}
         } else {
-          const torrentData = await app.shredTorrent(mid.mainHost, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0})
+          const torrentData = await app.shredTorrent(mid.mainHost, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || Number(searchParams.get('x-timer'))) : 0})
           return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainHost}${mid.mainPath}</title></head><body><div><p>${torrentData.type}: ${torrentData.id}</p><p>path: ${torrentData.path}</p><p>link: bt://${torrentData.id}/</p></div></body></html>`] : [JSON.stringify({[torrentData.type]: torrentData.id, path: torrentData.path, link: `bt://${torrentData.id}/`})]}
         }
       } else {
