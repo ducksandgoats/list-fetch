@@ -21,11 +21,11 @@ module.exports = async function makeBTFetch (opts = {}) {
 
   function htmlDir(data){
     if(data.isDirectory()){
-      return `<p>${{type: 'directory', name: data.name, link: `bt://${data.name}/`}}</p>`
+      return `<p>${JSON.stringify({type: 'directory', name: data.name, link: `bt://${data.name}/`})}</p>`
     } else if(data.isFile()){
-      return `<p>${{type: 'file', name: data.name, link: `bt://${data.name}/`}}</p>`
+      return `<p>${JSON.stringify({type: 'file', name: data.name, link: `bt://${data.name}/`})}</p>`
     } else {
-      return `<p>${{type: 'other', name: data.name, link: `bt://${data.name}/`}}</p>`
+      return `<p>${JSON.stringify({type: 'other', name: data.name, link: `bt://${data.name}/`})}</p>`
     }
   }
 
