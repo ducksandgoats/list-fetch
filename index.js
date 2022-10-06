@@ -19,6 +19,26 @@ module.exports = async function makeBTFetch (opts = {}) {
 
   // const prog = new Map()
 
+  function htmlDir(data){
+    if(data.isDirectory()){
+      return `<p>${{type: 'directory', name: data.name, link: `bt://${data.name}/`}}</p>`
+    } else if(data.isFile()){
+      return `<p>${{type: 'file', name: data.name, link: `bt://${data.name}/`}}</p>`
+    } else {
+      return `<p>${{type: 'other', name: data.name, link: `bt://${data.name}/`}}</p>`
+    }
+  }
+
+  function jsonDir(data){
+    if(data.isDirectory()){
+      return {type: 'directory', name: data.name, link: `bt://${data.name}/`}
+    } else if(data.isFile()){
+      return {type: 'file', name: data.name, link: `bt://${data.name}/`}
+    } else {
+      return {type: 'other', name: data.name, link: `bt://${data.name}/`}
+    }
+  }
+
   function getMimeType (path) {
     let mimeType = mime.getType(path) || 'text/plain'
     if (mimeType.startsWith('text/')) mimeType = `${mimeType}; charset=utf-8`
@@ -98,7 +118,8 @@ module.exports = async function makeBTFetch (opts = {}) {
       } else if(method === 'GET'){
         const mainRange = reqHeaders.Range || reqHeaders.range
         if (mid.mainQuery) {
-          return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>Thank you for using Bittorrent-Fetch-Fetch</p></div></body></html>'] : [JSON.stringify('Thank you for using BT-Fetch')]}
+          const torrentData = await app.listDirectory()
+          return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>Bittorrent-Fetch</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]}
         } else {
           const torrentData = await app.loadTorrent(mid.mainHost, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0})
           if(torrentData){
