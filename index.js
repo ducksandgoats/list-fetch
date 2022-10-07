@@ -21,23 +21,29 @@ module.exports = async function makeBTFetch (opts = {}) {
 
   function htmlDir(data){
     if(data.isDirectory()){
-      return `<p>type: directory, name: ${data.name}, link: <a href="bt://${data.name}/">${data.name}</a></p>`
+      return `<p>type: directory, name: ${data.name}</p>`
     } else if(data.isFile()){
-      return `<p>type: file, name: ${data.name}, link: <a href="bt://${data.name}/">${data.name}</a></p>`
+      return `<p>type: file, name: ${data.name}</p>`
     } else {
-      return `<p>type: other, name: ${data.name}, link: <a href="bt://${data.name}/">${data.name}</a></p>`
+      return `<p>type: other, name: ${data.name}</p>`
     }
   }
 
   function jsonDir(data){
     if(data.isDirectory()){
-      return {type: 'directory', name: data.name, link: `bt://${data.name}/`}
+      return {type: 'directory', name: data.name}
     } else if(data.isFile()){
-      return {type: 'file', name: data.name, link: `bt://${data.name}/`}
+      return {type: 'file', name: data.name}
     } else {
-      return {type: 'other', name: data.name, link: `bt://${data.name}/`}
+      return {type: 'other', name: data.name}
     }
   }
+
+  // function htmlAuthor(arr){
+  //   return arr.map((data) => {
+  //     for()
+  //   })
+  // }
 
   function getMimeType (path) {
     let mimeType = mime.getType(path) || 'text/plain'
@@ -116,11 +122,29 @@ module.exports = async function makeBTFetch (opts = {}) {
           }
         }
       } else if(method === 'GET'){
-        const mainRange = reqHeaders.Range || reqHeaders.range
         if (mid.mainQuery) {
-          const torrentData = await app.listDirectory()
-          return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>Bittorrent-Fetch</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]}
+          if(reqHeaders['x-store']){
+            if(JSON.parse(reqHeaders['x-store'])){
+              const torrentData = await app.listDirectory(true)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]}
+            } else {
+              const torrentData = await app.listDirectory(false)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.length}</div></body></html>`] : [JSON.stringify(torrentData.length)]}
+            }
+          } else if(reqHeaders['x-author']){
+            if(JSON.parse(reqHeaders['x-author'])){
+              const torrentData = await app.listAuthor(true)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {data.link = `<a href="${data.link}">${data.id}</a>`;return `<p>${JSON.stringify(data)}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
+            } else {
+              const torrentData = await app.listAuthor(false)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {data.link = `<a href="${data.link}">${data.id}</a>`;return `<p>${JSON.stringify(data)}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
+            }
+          } else {
+            const torrentData = await app.getAuthorOnly()
+            return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
+          }
         } else {
+          const mainRange = reqHeaders.Range || reqHeaders.range
           const torrentData = await app.loadTorrent(mid.mainHost, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0})
           if(torrentData){
             if(torrentData.infoHash){
