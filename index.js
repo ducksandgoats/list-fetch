@@ -123,25 +123,25 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       } else if(method === 'GET'){
         if (mid.mainQuery) {
-          if(reqHeaders['x-store']){
-            if(JSON.parse(reqHeaders['x-store'])){
+          if(reqHeaders['x-store'] || searchParams.has('x-store')){
+            if(JSON.parse(reqHeaders['x-store'] || searchParams.get('x-store'))){
               const torrentData = await app.listDirectory(true)
               return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]}
             } else {
               const torrentData = await app.listDirectory(false)
               return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.length}</div></body></html>`] : [JSON.stringify(torrentData.length)]}
             }
-          } else if(reqHeaders['x-author']){
-            if(JSON.parse(reqHeaders['x-author'])){
-              const torrentData = await app.listAuthor(true)
-              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {data.link = `<a href="${data.link}">${data.id}</a>`;return `<p>${JSON.stringify(data)}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
+          } else if(reqHeaders['x-author'] || searchParams.has('x-author')){
+            if(JSON.parse(reqHeaders['x-author'] || searchParams.get('x-author'))){
+              const torrentData = await app.listAuthor()
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {if(data.address){data.link = `<a href="bt://${data.address}/">${data.address}</a>`} else if(data.title){data.link = `<a href="bt://${data.infohash}/">${data.infohash}</a>`} return `<p>${JSON.stringify(data)}</p>`;})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {if(data.address){data.link = `bt://${data.address}/`} else if(data.title){data.link = `bt://${data.infohash}/`} return data;}))]}
             } else {
-              const torrentData = await app.listAuthor(false)
-              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {data.link = `<a href="${data.link}">${data.id}</a>`;return `<p>${JSON.stringify(data)}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
+              const torrentData = await app.getAuthorOnly()
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
             }
           } else {
             const torrentData = await app.getAuthorOnly()
-            return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
+            return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p><a href="bt://${data}/">${data}</a></p>`})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]}
           }
         } else {
           const mainRange = reqHeaders.Range || reqHeaders.range
