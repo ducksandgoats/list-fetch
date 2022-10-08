@@ -28,7 +28,7 @@ module.exports = async function makeBTFetch (opts = {}) {
       data.link = `<a href="bt://${data.infohash}/">${data.infohash}</a>`
     } else if(data.id.length === 20){
       data.kind = 'title'
-      data.link = `<a href="bt://${data.infohash}/">${data.title}</a>`
+      data.link = `<a href="bt://${data.infohash}/">${data.infohash}</a>`
     }
     return `<p>${JSON.stringify(data)}</p>`
   }
