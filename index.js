@@ -19,24 +19,73 @@ module.exports = async function makeBTFetch (opts = {}) {
 
   // const prog = new Map()
 
-  function htmlDir(data){
-    if(data.isDirectory()){
-      return `<p>type: directory, name: ${data.name}</p>`
-    } else if(data.isFile()){
-      return `<p>type: file, name: ${data.name}</p>`
-    } else {
-      return `<p>type: other, name: ${data.name}</p>`
+  function htmlIden(data){
+    if(data.id.length === 64){
+      data.kind = 'address'
+      data.link = `<a href="bt://${data.address}/">${data.address}</a>`
+    } else if(data.id.length === 40){
+      data.kind = 'infohash'
+      data.link = `<a href="bt://${data.infohash}/">${data.infohash}</a>`
+    } else if(data.id.length === 20){
+      data.kind = 'title'
+      data.link = `<a href="bt://${data.infohash}/">${data.title}</a>`
     }
+    return `<p>${JSON.stringify(data)}</p>`
+  }
+
+  function jsonIden(data){
+    if(data.id.length === 64){
+      data.kind = 'address'
+      data.link = `bt://${data.address}/`
+    } else if(data.id.length === 40){
+      data.kind = 'infohash'
+      data.link = `bt://${data.infohash}/`
+    } else if(data.id.length === 20){
+      data.kind = 'title'
+      data.link = `bt://${data.infohash}/`
+    }
+    return data
+  }
+
+  function htmlDir(data){
+    if(data.name.length === 64){
+      data.kind = 'address'
+    } else if(data.name.length === 40){
+      data.kind = 'infohash'
+    } else if(data.name.length === 20){
+      data.kind = 'title'
+    } else {
+      data.kind = 'other'
+    }
+    if(data.isDirectory()){
+      data.type = 'directory'
+    } else if(data.isFile()){
+      data.type = 'file'
+    } else {
+      data.type = 'other'
+    }
+    return `<p>${JSON.stringify(data)}</p>`
   }
 
   function jsonDir(data){
-    if(data.isDirectory()){
-      return {type: 'directory', name: data.name}
-    } else if(data.isFile()){
-      return {type: 'file', name: data.name}
+    if(data.name.length === 64){
+      data.kind = 'address'
+    } else if(data.name.length === 40){
+      data.kind = 'infohash'
+    } else if(data.name.length === 20){
+      data.kind = 'title'
     } else {
-      return {type: 'other', name: data.name}
+      data.kind = 'other'
     }
+    if(data.isDirectory()){
+      data.type = 'directory'
+    } else if(data.isFile()){
+      data.type = 'file'
+      return {type: 'file', name: data.name, id: data.kind}
+    } else {
+      data.type = 'other'
+    }
+    return data
   }
 
   // function htmlAuthor(arr){
@@ -123,20 +172,28 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       } else if(method === 'GET'){
         if (mid.mainQuery) {
-          if(reqHeaders['x-store'] || searchParams.has('x-store')){
-            if(JSON.parse(reqHeaders['x-store'] || searchParams.get('x-store'))){
+          if(reqHeaders['x-id'] || searchParams.has('x-id')){
+            if(JSON.parse(reqHeaders['x-id'] || searchParams.get('x-id'))){
               const torrentData = await app.listDirectory(true)
-              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]}
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonIden))]}
             } else {
               const torrentData = await app.listDirectory(false)
-              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.length}</div></body></html>`] : [JSON.stringify(torrentData.length)]}
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p><a href="bt://${data}/">${data}</a></p>`})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]}
             }
-          } else if(reqHeaders['x-author'] || searchParams.has('x-author')){
-            if(JSON.parse(reqHeaders['x-author'] || searchParams.get('x-author'))){
-              const torrentData = await app.getAuthorOnly()
+          } else if(reqHeaders['x-dir'] || searchParams.has('x-dir')){
+            if(JSON.parse(reqHeaders['x-dir'] || searchParams.get('x-dir'))){
+              const torrentData = await app.getDirectory(true)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]}
+            } else {
+              const torrentData = await app.getDirectory(false)
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData}</div></body></html>`] : [JSON.stringify(torrentData)]}
+            }
+          } else if(reqHeaders['x-auth'] || searchParams.has('x-auth')){
+            if(JSON.parse(reqHeaders['x-auth'] || searchParams.get('x-auth'))){
+              const torrentData = await app.getAuthor()
               return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p><a href="bt://${data}/">${data}</a></p>`})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]}
             } else {
-              const torrentData = await app.getAuthorOnly()
+              const torrentData = await app.getAuthor()
               return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
             }
           } else {
