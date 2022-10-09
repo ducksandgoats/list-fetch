@@ -186,7 +186,7 @@ module.exports = async function makeBTFetch (opts = {}) {
               return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]}
             } else {
               const torrentData = await app.getDirectory(false)
-              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData}</div></body></html>`] : [JSON.stringify(torrentData)]}
+              return {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]}
             }
           } else if(reqHeaders['x-auth'] || searchParams.has('x-auth')){
             if(JSON.parse(reqHeaders['x-auth'] || searchParams.get('x-auth'))){
