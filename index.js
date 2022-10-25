@@ -167,12 +167,16 @@ module.exports = async function makeBTFetch (opts = {}) {
               const test = {}
               if(torrentData.address){
                 test['X-Address'] = torrentData.address
+                test['X-Data'] = torrentData.address
+                test['X-Link'] = `<bt://${torrentData.address}${mid.mainPath}>; rel="canonical"`
               }
               if(torrentData.secret){
                 test['X-Secret'] = torrentData.secret
               }
               if(torrentData.infohash){
                 test['X-Hash'] = torrentData.infohash
+                test['X-Data'] = torrentData.infohash
+                test['X-Link'] = `<bt://${torrentData.infohash}${mid.mainPath}>; rel="canonical"`
               }
               return sendTheData(signal, {statusCode: 200, headers: test, data: []})
             } else {
