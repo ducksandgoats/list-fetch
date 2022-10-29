@@ -18,6 +18,43 @@ module.exports = async function makeBTFetch (opts = {}) {
 
   // const prog = new Map()
 
+  function handleTorrent(torrent){
+    let test = '<div>'
+    for(const i in torrent){
+      if(i === 'infohash'){
+        test = test + `<p>${i}: ${torrent[i]}</p><p>link: <a href='bt://${torrent[i]}/'>${torrent[i]}</a></p>`
+      }
+      if(i === 'address'){
+        test = test + `<p>${i}: ${torrent[i]}</p><p>link: <a href='bt://${torrent[i]}/'>${torrent[i]}</a></p>`
+      }
+      if(i === 'secret'){
+        test = test + `<p>${i}: ${torrent[i]}</p>`
+      }
+      if(i === 'title'){
+        test = test + `<p>${i}: ${torrent[i]}</p>`
+      }
+    }
+    if(test === '<div>'){
+      test = test + `<p>there is no new torrent</p></div>`
+    } else {
+      test = test + '</div>'
+    }
+    return test
+  }
+
+  function handleFile(id, saved, mid){
+    let test = '<div>'
+    saved.forEach((data) => {
+      test = test + `<p>file: ${data}</p><p>link: <a href='bt://${id}${path.join(mid, data).replace(/\\/g, "/")}'></a></p>`
+    })
+    if(test === '<div>'){
+      test = test + '<p>no files were uploaded</p></div>'
+    } else {
+      test = test + '</div>'
+    }
+    return test
+  }
+
   function takeCareOfIt(data){
     console.log(data)
     throw new Error('aborted')
@@ -111,27 +148,30 @@ module.exports = async function makeBTFetch (opts = {}) {
     return mimeType
   }
 
-  function formatReq (hostname, pathname, auth) {
+  function formatReq (hostname, pathname) {
 
     // let mainType = hostname[0] === hostType || hostname[0] === sideType ? hostname[0] : ''
-    const mainQuery = hostname[0] === hostType ? hostname[0] : ''
-    const mainHost = hostname.replace(mainQuery, '')
+    const mainQuery = hostname === hostType ? true : false
+    const mainHost = hostname
     const mainId = {}
-    if(checkAddress.test(mainHost)){
-      mainId.address = mainHost
-      mainId.secret = auth
-    } else if(checkHash.test(mainHost)){
-      mainId.infohash = mainHost
-    } else if(checkTitle.test(mainHost)){
-      mainId.title = mainHost
-    } else {
-      throw new Error('identifier is invalid')
+    if(!mainQuery){
+      if(checkAddress.test(mainHost)){
+        mainId.address = mainHost
+        mainId.secret = extra['x-authentication']
+      } else if(checkHash.test(mainHost)){
+        mainId.infohash = mainHost
+      } else if(checkTitle.test(mainHost)){
+        mainId.title = mainHost
+      } else {
+        throw new Error('identifier is invalid')
+      }
     }
     // if(pathname){
     //     console.log(decodeURIComponent(pathname))
     // }
     const mainPath = decodeURIComponent(pathname)
-    return { mainQuery, mainHost, mainPath, mainId }
+    const mainLink = `bt://${mainHost}${mainPath.includes('.') ? mainPath : mainPath + '/'}`
+    return { mainQuery, mainHost, mainPath, mainId, mainLink }
   }
 
   const fetch = makeFetch(async (request) => {
@@ -161,7 +201,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         return sendTheData(signal, {statusCode: 409, headers: {}, data: ['something wrong with hostname']})
       }
 
-      const mid = formatReq(decodeURIComponent(hostname), decodeURIComponent(pathname), reqHeaders['x-authentication'])
+      const mid = formatReq(decodeURIComponent(hostname), decodeURIComponent(pathname))
 
       const mainReq = !reqHeaders.accept || !reqHeaders.accept.includes('application/json')
       const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
@@ -181,6 +221,9 @@ module.exports = async function makeBTFetch (opts = {}) {
               }
               if(torrentData.secret){
                 test['X-Secret'] = torrentData.secret
+              }
+              if(torrentData.title){
+                test['X-Title'] = torrentData.title
               }
               if(torrentData.infohash){
                 test['X-Hash'] = torrentData.infohash
@@ -234,30 +277,29 @@ module.exports = async function makeBTFetch (opts = {}) {
           if(reqHeaders['x-id'] || searchParams.has('x-id')){
             if(JSON.parse(reqHeaders['x-id'] || searchParams.get('x-id'))){
               const torrentData = await app.listDirectory(true)
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonIden))]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonIden))]})
             } else {
               const torrentData = await app.listDirectory(false)
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
             }
           } else if(reqHeaders['x-dir'] || searchParams.has('x-dir')){
             if(JSON.parse(reqHeaders['x-dir'] || searchParams.get('x-dir'))){
               const torrentData = await app.getDirectory(true)
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlDir)}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]})
             } else {
               const torrentData = await app.getDirectory(false)
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]})
             }
           } else if(reqHeaders['x-auth']){
+            const torrentData = await app.getAuthor()
             if(JSON.parse(reqHeaders['x-auth'])){
-              const torrentData = await app.getAuthor()
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
             } else {
-              const torrentData = await app.getAuthor()
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map((data) => {return `<p>${data}</p>`})}</div></body></html>`] : [JSON.stringify(torrentData)]})
             }
           } else {
             const torrentData = await app.listAuthor()
-            return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>/</title></head><body><div>${torrentData.map((data) => {if(data.address){data.link = `<a href='bt://${data.address}/'>${data.address}</a>`} else if(data.title){data.link = `<a href='bt://${data.infohash}/'>${data.infohash}</a>`} return `<p>${JSON.stringify(data)}</p>`;})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {if(data.address){data.link = `bt://${data.address}/`} else if(data.title){data.link = `bt://${data.infohash}/`} return data;}))]})
+            return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map((data) => {if(data.address){data.link = `<a href='bt://${data.address}/'>${data.address}</a>`} else if(data.title){data.link = `<a href='bt://${data.infohash}/'>${data.infohash}</a>`} return `<p>${JSON.stringify(data)}</p>`;})}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {if(data.address){data.link = `bt://${data.address}/`} else if(data.title){data.link = `bt://${data.infohash}/`} return data;}))]})
           }
         } else {
           const mainRange = reqHeaders.Range || reqHeaders.range
@@ -269,8 +311,7 @@ module.exports = async function makeBTFetch (opts = {}) {
               if(Array.isArray(torrentData)){
                 let checkLength = 0
                 torrentData.forEach((data) => {checkLength = checkLength + data.length})
-
-                return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes, 'Content-Length': String(checkLength)}, data: mainReq ? [`<html><head><title>Directory</title></head><body><div><h1>Directory</h1><p><a href='../'>..</a></p>${torrentData.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.map(file => { return file.urlPath }))]})
+                return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes, 'Content-Length': String(checkLength)}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><h1>Directory</h1><p><a href='../'>..</a></p>${torrentData.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.map(file => { return file.urlPath }))]})
               } else {
                 if (mainRange) {
                   const ranges = parseRange(torrentData.length, mainRange)
@@ -288,12 +329,12 @@ module.exports = async function makeBTFetch (opts = {}) {
               }
             }
           } else {
-            return sendTheData(signal, {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainHost}</title></head><body><div><p>could not find the data</p></div></body></html>`] : [JSON.stringify('could not find the data')]})
+            return sendTheData(signal, {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>could not find the data</p></div></body></html>`] : [JSON.stringify('could not find the data')]})
           }
         }
       } else if(method === 'POST'){
         if(!body){
-          return sendTheData(signal, {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainHost}</title></head><body><div><p>must have a body</p></div></body></html>`] : [JSON.stringify('must have a body')]})
+          return sendTheData(signal, {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>must have a body</p></div></body></html>`] : [JSON.stringify('must have a body')]})
         } else {
           const useOpts = {
             count: reqHeaders['x-version'] || searchParams.has('x-version') ? Number(reqHeaders['x-version'] || searchParams.get('x-version')) : null,
@@ -303,15 +344,15 @@ module.exports = async function makeBTFetch (opts = {}) {
           if (mid.mainQuery) {
             if(JSON.parse(reqHeaders['x-update']) || JSON.parse(searchParams.has('x-update'))){
               const torrentData = await app.publishTorrent({address: null, secret: null}, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, 'X-Secret': torrentData.secret, 'X-Address': torrentData.address, 'X-Infohash': torrentData.infohash}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>infohash: ${torrentData.infohash}</p><p>sequence: ${torrentData.sequence}</p><p>secret: ${torrentData.secret}</p></div></body></html>`] : [JSON.stringify(torrentData.saved.map((data) => {return {file: data, link: `bt://${torrentData.address}${path.join(mid.mainPath, data).replace(/\\/g, "/")}`}}))]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, 'X-Title': torrentData.title, 'X-Secret': torrentData.secret, 'X-Address': torrentData.address, 'X-Infohash': torrentData.infohash}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>title: ${torrentData.title}</p><p>infohash: ${torrentData.infohash}</p><p>sequence: ${torrentData.sequence}</p><p>secret: ${torrentData.secret}</p>${handleFile(torrentData.address, torrentData.saved, mid.mainPath)}</div></body></html>`] : [JSON.stringify(torrentData.saved.map((data) => {return {file: data, link: `bt://${torrentData.address}${path.join(mid.mainPath, data).replace(/\\/g, "/")}`}}))]})
             } else {
               const torrentData = await app.publishTorrent({infohash: null}, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
-              return sendTheData(signal, {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, 'X-Infohash': torrentData.infohash, 'X-Title': torrentData.title}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>infohash: ${torrentData.infohash}</p><p>title: ${torrentData.title}</p></div></body></html>`] : [JSON.stringify(torrentData.saved.map(data => {return {file: data, link: `bt://${torrentData.infohash}${path.join(mid.mainPath, data).replace(/\\/g, "/")}`}}))]})
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, 'X-Infohash': torrentData.infohash}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>infohash: ${torrentData.infohash}</p></div>${handleFile(torrentData.infohash, torrentData.saved, mid.mainPath)}</body></html>`] : [JSON.stringify(torrentData.saved.map(data => {return {file: data, link: `bt://${torrentData.infohash}${path.join(mid.mainPath, data).replace(/\\/g, "/")}`}}))]})
             }
           } else {
             if(reqHeaders['x-authentication'] || searchParams.has('x-authentication')){
-            const torrentData = await app.publishTorrent(mid.mainId, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
-            return sendTheData(signal, {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, 'X-Authentication': torrentData.secret, 'X-Address': torrentData.address, 'X-Infohash': torrentData.infohash}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>infohash: ${torrentData.infohash}</p><p>sequence: ${torrentData.sequence}</p><p>secret: ${torrentData.secret}</p></div><div>${torrentData.files.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.saved.map(data => {return {file: data, link: `bt://${torrentData.address}${path.join(mid.mainPath, data).replace(/\\/g, "/")}`}}))]})
+              const torrentData = await app.publishTorrent(mid.mainId, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
+              return sendTheData(signal, {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, 'X-Authentication': torrentData.secret, 'X-Address': torrentData.address, 'X-Infohash': torrentData.infohash}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>address: ${torrentData.address}</p><p>infohash: ${torrentData.infohash}</p><p>sequence: ${torrentData.sequence}</p><p>secret: ${torrentData.secret}</p></div><div>${torrentData.files.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.saved.map(data => {return {file: data, link: `bt://${torrentData.address}${path.join(mid.mainPath, data).replace(/\\/g, "/")}`}}))]})
             } else {
               const torrentData = await app.publishTorrent(mid.mainId, mid.mainPath, reqHeaders['content-type'] && reqHeaders['content-type'].includes('multipart/form-data') ? reqHeaders : null, body, useOpts)
               return sendTheData(signal, {statusCode: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, 'X-Infohash': torrentData.infohash, 'X-Title': torrentData.title}, data: mainReq ? [`<html><head><title>${torrentData.name}</title></head><body><div><p>infohash: ${torrentData.infohash}</p><p>title: ${torrentData.title}</p></div><div>${torrentData.files.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>`] : [JSON.stringify(torrentData.saved.map(data => {return {file: data, link: `bt://${torrentData.infohash}${path.join(mid.mainPath, data).replace(/\\/g, "/")}`}}))]})
@@ -320,13 +361,13 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       } else if(method === 'DELETE'){
         if (mid.mainQuery) {
-          return sendTheData(signal, {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>must not use underscore</p></div></body></html>'] : [JSON.stringify('must not use underscore')]})
+          return sendTheData(signal, {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>must not use underscore</p></div></body></html>`] : [JSON.stringify('must not use underscore')]})
         } else {
           const torrentData = await app.shredTorrent(mid.mainId, mid.mainPath, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || Number(searchParams.get('x-timer'))) : 0})
-          return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>bt://${torrentData.id}${torrentData.path}</title></head><body><div><p>${torrentData.type}: ${torrentData.id}</p><p>path: ${torrentData.path}</p><p>link: bt://${torrentData.id}/</p><p>torrent: ${JSON.stringify(torrentData.torrent)}</p></div></body></html>`] : [JSON.stringify({id: torrentData.id, torrent: torrentData.torrent, tid: torrentData.id, type: torrentData.type, path: torrentData.path, link: `bt://${torrentData.id}/`})]})
+          return sendTheData(signal, {statusCode: 200, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>bt://${torrentData.id}${torrentData.path}</title></head><body><div><p>${torrentData.type}: ${torrentData.id}</p><p>path: ${torrentData.path}</p><p>link: bt://${torrentData.id}/</p></div>${handleTorrent(torrentData.torrent)}</body></html>`] : [JSON.stringify({id: torrentData.id, torrent: torrentData.torrent, tid: torrentData.id, type: torrentData.type, path: torrentData.path, link: `bt://${torrentData.id}/`})]})
         }
       } else {
-        return sendTheData(signal, {statusCode: 400, headers: { 'Content-Type': mainRes }, data: mainReq ? ['<html><head><title>Bittorrent-Fetch</title></head><body><div><p>method is not supported</p></div></body></html>'] : [JSON.stringify('method is not supported')]})
+        return sendTheData(signal, {statusCode: 400, headers: { 'Content-Type': mainRes }, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>method is not supported</p></div></body></html>`] : [JSON.stringify('method is not supported')]})
       }
     } catch (e) {
       const mainReq = !reqHeaders.accept || !reqHeaders.accept.includes('application/json')
