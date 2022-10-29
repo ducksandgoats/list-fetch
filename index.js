@@ -329,12 +329,12 @@ module.exports = async function makeBTFetch (opts = {}) {
               }
             }
           } else {
-            return sendTheData(signal, {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>could not find the data</p></div></body></html>`] : [JSON.stringify('could not find the data')]})
+            return sendTheData(signal, {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>could not find the data</p></div></body></html>`] : [JSON.stringify('could not find the data')]})
           }
         }
       } else if(method === 'POST'){
         if(!body){
-          return sendTheData(signal, {statusCode: 400, headers: mainRes, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>must have a body</p></div></body></html>`] : [JSON.stringify('must have a body')]})
+          return sendTheData(signal, {statusCode: 400, headers: {'Content-Type': mainRes}, data: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div><p>must have a body</p></div></body></html>`] : [JSON.stringify('must have a body')]})
         } else {
           const useOpts = {
             count: reqHeaders['x-version'] || searchParams.has('x-version') ? Number(reqHeaders['x-version'] || searchParams.get('x-version')) : null,
