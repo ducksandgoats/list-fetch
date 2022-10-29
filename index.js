@@ -1,5 +1,5 @@
 module.exports = async function makeBTFetch (opts = {}) {
-  const makeFetch = (await import('make-fetch')).makeFetch
+  const makeFetch = require('make-fetch')
   const streamToIterator = require('stream-async-iterator')
   const mime = require('mime/lite')
   const parseRange = require('range-parser')
