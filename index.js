@@ -148,7 +148,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     return mimeType
   }
 
-  function formatReq (hostname, pathname) {
+  function formatReq (hostname, pathname, extra) {
 
     // let mainType = hostname[0] === hostType || hostname[0] === sideType ? hostname[0] : ''
     const mainQuery = hostname === hostType ? true : false
@@ -157,7 +157,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     if(!mainQuery){
       if(checkAddress.test(mainHost)){
         mainId.address = mainHost
-        mainId.secret = extra['x-authentication']
+        mainId.secret = extra
       } else if(checkHash.test(mainHost)){
         mainId.infohash = mainHost
       } else if(checkTitle.test(mainHost)){
@@ -201,7 +201,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         return sendTheData(signal, {statusCode: 409, headers: {}, data: ['something wrong with hostname']})
       }
 
-      const mid = formatReq(decodeURIComponent(hostname), decodeURIComponent(pathname))
+      const mid = formatReq(decodeURIComponent(hostname), decodeURIComponent(pathname), reqHeaders['x-authentication'])
 
       const mainReq = !reqHeaders.accept || !reqHeaders.accept.includes('application/json')
       const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
