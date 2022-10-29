@@ -1,11 +1,11 @@
-const makeFetch = require('make-fetch')
-const streamToIterator = require('stream-async-iterator')
-const mime = require('mime/lite')
-const parseRange = require('range-parser')
-const Torrentz = require('torrentz')
-const path = require('path')
-
 module.exports = async function makeBTFetch (opts = {}) {
+  const makeFetch = await import('make-fetch')
+  const streamToIterator = require('stream-async-iterator')
+  const mime = require('mime/lite')
+  const parseRange = require('range-parser')
+  const Torrentz = require('torrentz')
+  const path = require('path')
+
   const DEFAULT_OPTS = {}
   const finalOpts = { ...DEFAULT_OPTS, ...opts }
   const checkHash = /^[a-fA-F0-9]{40}$/
