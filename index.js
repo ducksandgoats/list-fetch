@@ -228,6 +228,9 @@ module.exports = async function makeBTFetch (opts = {}) {
                 test['X-Infohash'] = torrentData.infohash
                 test['X-Link'] = `<bt://${torrentData.infohash}${mid.mainPath}>; rel="canonical"`
               }
+              if(torrentData.id){
+                test['X-Id'] = torrentData.id
+              }
               return sendTheData(signal, {statusCode: 200, headers: test, data: []})
             } else {
               const torrentData = await app.unEchoTorrent(mid.mainId, {timeout: (reqHeaders['x-timer'] && reqHeaders['x-timer'] !== '0') || (searchParams.has('x-timer') && searchParams.get('x-timer') !== '0') ? Number(reqHeaders['x-timer'] || searchParams.get('x-timer')) : 0})
@@ -237,6 +240,9 @@ module.exports = async function makeBTFetch (opts = {}) {
               }
               if(torrentData.infohash){
                 test['X-Infohash'] = torrentData.infohash
+              }
+              if(torrentData.id){
+                test['X-Id'] = torrentData.id
               }
               return sendTheData(signal, {statusCode: 200, headers: test, data: []})
             }
