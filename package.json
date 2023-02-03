@@ -1,6 +1,6 @@
 {
   "name": "list-fetch",
-  "version": "25.0.2",
+  "version": "25.0.3",
   "description": "coming soon",
   "main": "index.js",
   "scripts": {
@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/ducksandgoats/list-fetch#readme",
   "dependencies": {
-    "make-fetch": "^3.1.1",
+    "make-fetch": "github:ducksandgoats/make-fetch",
     "mime": "^3.0.0",
     "range-parser": "^1.2.1",
     "stream-async-iterator": "^2.0.0",
