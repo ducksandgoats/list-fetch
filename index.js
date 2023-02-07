@@ -270,29 +270,29 @@ module.exports = async function makeBTFetch (opts = {}) {
       if(reqHeaders['x-id'] || searchParams.has('x-id')){
         if(JSON.parse(reqHeaders['x-id'] || searchParams.get('x-id'))){
           const torrentData = await app.listDirectory(true)
-          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.map(htmlIden))}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonIden))]})
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map(htmlIden) : '<p>there are no data</p>'}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonIden))]})
         } else {
           const torrentData = await app.listDirectory(false)
-          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`}))}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`}) : '<p>there are no data</p>'}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
         }
       } else if(reqHeaders['x-dir'] || searchParams.has('x-dir')){
         if(JSON.parse(reqHeaders['x-dir'] || searchParams.get('x-dir'))){
           const torrentData = await app.getDirectory(true)
-          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.map(htmlDir))}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]})
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map(htmlDir) : '<p>there are no data</p>'}</div></body></html>`] : [JSON.stringify(torrentData.map(jsonDir))]})
         } else {
           const torrentData = await app.getDirectory(false)
-          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.map((data) => {return `<p>${data}</p>`}))}</div></body></html>`] : [JSON.stringify(torrentData)]})
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map((data) => {return `<p>${data}</p>`}) : '<p>there are no data</p>'}</div></body></html>`] : [JSON.stringify(torrentData)]})
         }
       } else if(reqHeaders['x-auth']){
         const torrentData = await app.getAuthor()
         if(JSON.parse(reqHeaders['x-auth'])){
-          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`}))}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map((data) => {return `<p><a href='bt://${data}/'>${data}</a></p>`}) : '<p>there are no data</p>'}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {return `bt://${data}/`}))]})
         } else {
-          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.map((data) => {return `<p>${data}</p>`}))}</div></body></html>`] : [JSON.stringify(torrentData)]})
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map((data) => {return `<p>${data}</p>`}) : '<p>there are no data</p>'}</div></body></html>`] : [JSON.stringify(torrentData)]})
         }
       } else {
         const torrentData = await app.listAuthor()
-        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.map((data) => {if(data.address){data.link = `<a href='bt://${data.address}/'>${data.address}</a>`} else if(data.title){data.link = `<a href='bt://${data.infohash}/'>${data.infohash}</a>`} return `<p>${JSON.stringify(data)}</p>`;}))}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {if(data.address){data.link = `bt://${data.address}/`} else if(data.title){data.link = `bt://${data.infohash}/`} return data;}))]})
+        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? [`<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map((data) => {if(data.address){data.link = `<a href='bt://${data.address}/'>${data.address}</a>`} else if(data.title){data.link = `<a href='bt://${data.infohash}/'>${data.infohash}</a>`} return `<p>${JSON.stringify(data)}</p>`;}) : '<p>there are no data</p>'}</div></body></html>`] : [JSON.stringify(torrentData.map((data) => {if(data.address){data.link = `bt://${data.address}/`} else if(data.title){data.link = `bt://${data.infohash}/`} return data;}))]})
       }
     } else {
       const mainRange = reqHeaders.Range || reqHeaders.range
