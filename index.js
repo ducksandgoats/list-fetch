@@ -50,43 +50,6 @@ module.exports = async function makeBTFetch (opts = {}) {
     return arr
   }
 
-  function handleTorrent(torrent){
-    let test = '<div>'
-    for(const i in torrent){
-      if(i === 'infohash'){
-        test = test + `<p>${i}: ${torrent[i]}</p><p>link: <a href='bt://${torrent[i]}/'>${torrent[i]}</a></p>`
-      }
-      if(i === 'address'){
-        test = test + `<p>${i}: ${torrent[i]}</p><p>link: <a href='bt://${torrent[i]}/'>${torrent[i]}</a></p>`
-      }
-      if(i === 'secret'){
-        test = test + `<p>${i}: ${torrent[i]}</p>`
-      }
-      if(i === 'title'){
-        test = test + `<p>${i}: ${torrent[i]}</p>`
-      }
-    }
-    if(test === '<div>'){
-      test = test + `<p>there is no new torrent</p></div>`
-    } else {
-      test = test + '</div>'
-    }
-    return test
-  }
-
-  function handleFile(id, saved, mid){
-    let test = '<div>'
-    saved.forEach((data) => {
-      test = test + `<p>file: ${data}</p><p>link: <a href='bt://${id}${path.join(mid, data).replace(/\\/g, "/")}'></a></p>`
-    })
-    if(test === '<div>'){
-      test = test + '<p>no files were uploaded</p></div>'
-    } else {
-      test = test + '</div>'
-    }
-    return test
-  }
-
   function takeCareOfIt(data){
     console.log(data)
     throw new Error('aborted')
@@ -127,53 +90,6 @@ module.exports = async function makeBTFetch (opts = {}) {
     return data
   }
 
-  function htmlDir(data){
-    if(data.name.length === 64){
-      data.kind = 'address'
-    } else if(data.name.length === 40){
-      data.kind = 'infohash'
-    } else if(data.name.length === 20){
-      data.kind = 'title'
-    } else {
-      data.kind = 'other'
-    }
-    if(data.isDirectory()){
-      data.type = 'directory'
-    } else if(data.isFile()){
-      data.type = 'file'
-    } else {
-      data.type = 'other'
-    }
-    return `<p>${JSON.stringify(data)}</p>`
-  }
-
-  function jsonDir(data){
-    if(data.name.length === 64){
-      data.kind = 'address'
-    } else if(data.name.length === 40){
-      data.kind = 'infohash'
-    } else if(data.name.length === 20){
-      data.kind = 'title'
-    } else {
-      data.kind = 'other'
-    }
-    if(data.isDirectory()){
-      data.type = 'directory'
-    } else if(data.isFile()){
-      data.type = 'file'
-      return {type: 'file', name: data.name, id: data.kind}
-    } else {
-      data.type = 'other'
-    }
-    return data
-  }
-
-  // function htmlAuthor(arr){
-  //   return arr.map((data) => {
-  //     for()
-  //   })
-  // }
-
   function getMimeType (path) {
     let mimeType = mime.getType(path) || 'text/plain'
     if (mimeType.startsWith('text/')) mimeType = `${mimeType}; charset=utf-8`
@@ -198,9 +114,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         throw new Error('identifier is invalid')
       }
     }
-    // if(pathname){
-    //     console.log(decodeURIComponent(pathname))
-    // }
+    
     const mainPath = decodeURIComponent(pathname)
     const mainLink = `bt://${mainHost}${mainPath.includes('.') ? mainPath : mainPath + '/'}`
     return { mainQuery, mainHost, mainPath, mainId, mainLink }
