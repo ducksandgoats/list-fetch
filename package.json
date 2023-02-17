@@ -1,6 +1,6 @@
 {
   "name": "list-fetch",
-  "version": "26.0.7",
+  "version": "26.0.8",
   "description": "coming soon",
   "main": "index.js",
   "scripts": {
@@ -21,7 +21,7 @@
     "make-fetch": "github:ducksandgoats/make-fetch",
     "mime": "^3.0.0",
     "range-parser": "^1.2.1",
-    "torrentz": "^8.0.8"
+    "torrentz": "^9.0.0"
   },
   "devDependencies": {
     "form-data": "^4.0.0",
