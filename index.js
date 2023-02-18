@@ -5,7 +5,7 @@ module.exports = async function makeBTFetch (opts = {}) {
   const mime = require('mime/lite')
   const parseRange = require('range-parser')
   const Torrentz = require('torrentz')
-  const path = require('path')
+  // const path = require('path')
 
   const DEFAULT_OPTS = {}
   const finalOpts = { ...DEFAULT_OPTS, ...opts }
