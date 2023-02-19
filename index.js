@@ -265,7 +265,7 @@ module.exports = async function makeBTFetch (opts = {}) {
       const useHeaders = {}
       for (const test of ['sequence', 'name', 'infohash', 'dir', 'pair', 'secret', 'address']) {
         if (torrentData[test] || typeof(torrentData[test]) === 'number') {
-          useHeaders[test] = torrentData[test]
+          useHeaders['X-' + test.charAt(0).toUpperCase() + test.slice(1)] = torrentData[test]
         }
       }
       return sendTheData(signal, { status: 200, headers: { 'X-Link': `bt://${mid.mainHost}${mid.mainPath}`, 'Link': `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`, 'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders }, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved) })
