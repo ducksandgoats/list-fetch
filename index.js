@@ -62,28 +62,18 @@ module.exports = async function makeBTFetch (opts = {}) {
   }
 
   function htmlIden(data){
-    if(data.id.length === 64){
-      data.kind = 'address'
+    if(data.address){
       data.link = `<a href='bt://${data.address}/'>${data.address}</a>`
-    } else if(data.id.length === 40){
-      data.kind = 'infohash'
-      data.link = `<a href='bt://${data.infohash}/'>${data.infohash}</a>`
-    } else if(data.id.length === 20){
-      data.kind = 'title'
+    } else if(data.infohash){
       data.link = `<a href='bt://${data.infohash}/'>${data.infohash}</a>`
     }
     return `<p>${JSON.stringify(data)}</p>`
   }
 
   function jsonIden(data){
-    if(data.id.length === 64){
-      data.kind = 'address'
+    if(data.address){
       data.link = `bt://${data.address}/`
-    } else if(data.id.length === 40){
-      data.kind = 'infohash'
-      data.link = `bt://${data.infohash}/`
-    } else if(data.id.length === 20){
-      data.kind = 'title'
+    } else if(data.infohash){
       data.link = `bt://${data.infohash}/`
     }
     return data
@@ -133,10 +123,10 @@ module.exports = async function makeBTFetch (opts = {}) {
     if (mid.mainQuery) {
       if(reqHeaders.has('x-data') || searchParams.has('x-data')){
         const torrentData = await app.torrentData(JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data')))
-        return sendTheData(signal, {status: 200, headers: {'X-Length': `${torrentData.length}`}, body: ''})
+        return sendTheData(signal, {status: 200, headers: {'X-Length': `${torrentData.size}`, 'X-Count': `${torrentData.length}`}, body: ''})
       } else {
         const torrentData = await app.authorData()
-        return sendTheData(signal, {status: 200, headers: {'X-Length': `${torrentData.length}`}, body: ''})
+        return sendTheData(signal, {status: 200, headers: {'X-Length': `${torrentData.size}`, 'X-Count': `${torrentData.length}`}, body: ''})
       }
     } else {
       const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
@@ -202,10 +192,10 @@ module.exports = async function makeBTFetch (opts = {}) {
     if (mid.mainQuery) {
       if(reqHeaders.has('x-data') || searchParams.has('x-data')){
         const torrentData = await app.torrentData(JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data')))
-        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map(htmlIden) : '<p>there are no data</p>'}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
+        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
       } else {
         const torrentData = await app.authorData()
-        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.length ? torrentData.map((data) => {if(data.address){data.link = `<a href='bt://${data.address}/'>${data.address}</a>`} else {data.link = `<a href='bt://${data.infohash}/'>${data.infohash}</a>`} return `<p>${JSON.stringify(data)}</p>`;}) : '<p>there are no data</p>'}</div></body></html>` : JSON.stringify(torrentData.map((data) => {if(data.address){data.link = `bt://${data.address}/`} else {data.link = `bt://${data.infohash}/`} return data;}))})
+        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
       }
     } else {
       const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
