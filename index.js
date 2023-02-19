@@ -131,12 +131,8 @@ module.exports = async function makeBTFetch (opts = {}) {
     } else {
       const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
       if (reqHeaders.has('x-copy') || searchParams.has('x-copy')) {
-        try {
-          const torrentData = await app.userTorrent(mid.mainId, mid.mainPath, {...useOpts, id: JSON.parse(reqHeaders.get('x-copy') || searchParams.get('x-copy'))})
-          return sendTheData(signal, {status: 200, headers: {'X-Path': torrentData}, body: ''})
-        } catch (error) {
-          return sendTheData(signal, {status: 400, headers: {'X-Error': error.name}, body: ''})
-        }
+        const torrentData = await app.userTorrent(mid.mainId, mid.mainPath, { ...useOpts, id: JSON.parse(reqHeaders.get('x-copy') || searchParams.get('x-copy')) })
+        return sendTheData(signal, { status: 200, headers: { 'X-Path': torrentData }, body: '' })
       } else {
         const torrentData = await app.loadTorrent(mid.mainId, mid.mainPath, useOpts)
         if (torrentData) {
