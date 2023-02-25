@@ -142,8 +142,8 @@ module.exports = async function makeBTFetch (opts = {}) {
             useHeaders['Content-Length'] = `${torrentData.length}`
             useHeaders['Accept-Ranges'] = 'bytes'
             useHeaders['X-Downloaded'] = `${torrentData.downloaded}`
-            useHeaders['X-Link'] = `bt://${mid.mainHost}${mid.mainPath}`
-            useHeaders['Link'] = `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`
+            useHeaders['X-Link'] = `bt://${torrentData.address || torrentData.infohash}${mid.mainPath}`
+            useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
 
             return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
           } else if(Array.isArray(torrentData)){
@@ -198,7 +198,7 @@ module.exports = async function makeBTFetch (opts = {}) {
       const torrentData = await app.loadTorrent(mid.mainId, mid.mainPath, useOpts)
       if(torrentData){
         if(torrentData.infoHash){
-          return sendTheData(signal, {status: 200, headers: {'X-Link': `bt://${mid.mainHost}${mid.mainPath}`, 'Link': `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`, 'Content-Type': mainRes, 'Content-Length': String(torrentData.length)}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><h1>${torrentData.infohash}</h1>${torrentData.files.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>` : JSON.stringify(torrentData.files.map(file => { return file.urlPath }))})
+          return sendTheData(signal, {status: 200, headers: {'X-Link': `bt://${torrentData.address || torrentData.infohash}${mid.mainPath}`, 'Link': `<bt://${torrentData.address || torrentData.infohash}${mid.mainPath}>; rel="canonical"`, 'Content-Type': mainRes, 'Content-Length': String(torrentData.length)}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><h1>${torrentData.infohash}</h1>${torrentData.files.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>` : JSON.stringify(torrentData.files.map(file => { return file.urlPath }))})
         } else if (Array.isArray(torrentData)) {
           let checkLength = 0
           torrentData.forEach((data) => {checkLength = checkLength + data.length})
@@ -255,10 +255,8 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       }
       const useIden = torrentData.address || torrentData.infohash
-      const useName = `bt://${useIden}`
-      const useLink = `${useName}${torrentData.path}`
-      torrentData.saved.forEach((data, i) => {torrentData.saved[i] = path.join(useName, data).replace(/\\/g, '/')})
-      useHeaders['X-Link'] = useLink
+      torrentData.saved.forEach((data, i) => {torrentData.saved[i] = 'bt://' + path.join(useIden, data).replace(/\\/g, '/')})
+      useHeaders['X-Link'] = `bt://${useIden}${torrentData.path}`
       useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
       return sendTheData(signal, {status: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders}, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved)})
     } else {
@@ -275,10 +273,8 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       }
       const useIden = torrentData.address || torrentData.infohash
-      const useName = `bt://${useIden}`
-      const useLink = `${useName}${torrentData.path}`
-      torrentData.saved.forEach((data, i) => {torrentData.saved[i] = path.join(useName, data).replace(/\\/g, '/')})
-      useHeaders['X-Link'] = useLink
+      torrentData.saved.forEach((data, i) => {torrentData.saved[i] = 'bt://' + path.join(useIden, data).replace(/\\/g, '/')})
+      useHeaders['X-Link'] = `bt://${useIden}${torrentData.path}`
       useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
       return sendTheData(signal, { status: 200, headers: { 'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders }, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved) })
     }
@@ -309,8 +305,8 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       }
       const useIden = torrentData.address || torrentData.infohash || torrentData.id
-      const useLink = `bt://${useIden}${torrentData.path}`
-      useHead['X-Link'] = useLink
+      const useLink = `bt://${torrentData.id}${torrentData.path}`
+      useHead['X-Link'] = `bt://${useIden}${torrentData.path}`
       useHead['Link'] = `<${useHead['X-Link']}>; rel="canonical"`
 
       return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes, ...useHead}, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${useLink}</div></body></html>` : JSON.stringify(useLink)})
@@ -329,7 +325,7 @@ module.exports = async function makeBTFetch (opts = {}) {
           reject(error)
         } else {
           app.checkId.clear()
-          clearInterval(app.updateRoutine)
+          clearInterval(app.session)
           resolve()
         }
       })
