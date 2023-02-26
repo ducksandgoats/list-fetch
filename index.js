@@ -255,7 +255,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       }
       const useIden = torrentData.address || torrentData.infohash
-      torrentData.saved.forEach((data, i) => {torrentData.saved[i] = 'bt://' + path.join(useIden, data).replace(/\\/g, '/')})
+      torrentData.saved = 'bt://' + path.join(useIden, torrentData.saved).replace(/\\/g, '/')
       useHeaders['X-Link'] = `bt://${useIden}${torrentData.path}`
       useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
       return sendTheData(signal, {status: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders}, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved)})
@@ -273,7 +273,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       }
       const useIden = torrentData.address || torrentData.infohash
-      torrentData.saved.forEach((data, i) => {torrentData.saved[i] = 'bt://' + path.join(useIden, data).replace(/\\/g, '/')})
+      torrentData.saved = 'bt://' + path.join(useIden, torrentData.saved).replace(/\\/g, '/')
       useHeaders['X-Link'] = `bt://${useIden}${torrentData.path}`
       useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
       return sendTheData(signal, { status: 200, headers: { 'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders }, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved) })
