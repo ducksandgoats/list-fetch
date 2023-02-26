@@ -136,21 +136,15 @@ module.exports = async function makeBTFetch (opts = {}) {
       } else {
         const torrentData = await app.loadTorrent(mid.mainId, mid.mainPath, useOpts)
         if (torrentData) {
-          if(torrentData.infoHash){
-            const useHeaders = {}
-            // useHeaders['Content-Type'] = mid.mainRes
-            useHeaders['Content-Length'] = `${torrentData.length}`
-            useHeaders['Accept-Ranges'] = 'bytes'
-            useHeaders['X-Downloaded'] = `${torrentData.downloaded}`
-            useHeaders['X-Link'] = `bt://${torrentData.address || torrentData.infohash}${mid.mainPath}`
+          if (Array.isArray(torrentData)) {
+            const useHeaders = { 'Content-Length': 0, 'Accept-Ranges': 'bytes', 'X-Downloaded': 0, 'X-Link': `bt://${mid.mainHost}${mid.mainPath}` }
             useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
+            torrentData.forEach((data) => {
+              useHeaders['Content-Length'] = useHeaders['Content-Length'] + data.length
+              useHeaders['X-Downloaded'] = useHeaders['X-Downloaded'] + data.downloaded
+            })
 
-            return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
-          } else if(Array.isArray(torrentData)){
-            let checkLength = 0
-            torrentData.forEach((data) => {checkLength = checkLength + data.length})
-
-            sendTheData(signal, {status: 200, headers: {'X-Link': `bt://${mid.mainHost}${mid.mainPath}`, 'Link': `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`,'Content-Length': String(checkLength)}, body: ''})
+            sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
           } else if(torrentData.createReadStream){
             const useHeaders = {}
             useHeaders['Content-Type'] = getMimeType(torrentData.path)
@@ -158,7 +152,7 @@ module.exports = async function makeBTFetch (opts = {}) {
             useHeaders['Accept-Ranges'] = 'bytes'
             useHeaders['X-Downloaded'] = `${torrentData.downloaded}`
             useHeaders['X-Link'] = `bt://${mid.mainHost}${mid.mainPath}`
-            useHeaders['Link'] = `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`
+            useHeaders['Link'] = `<bt://${useHeaders['X-Link']}>; rel="canonical"`
 
             return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
           } else {
@@ -197,12 +191,17 @@ module.exports = async function makeBTFetch (opts = {}) {
       const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
       const torrentData = await app.loadTorrent(mid.mainId, mid.mainPath, useOpts)
       if(torrentData){
-        if(torrentData.infoHash){
-          return sendTheData(signal, {status: 200, headers: {'X-Link': `bt://${torrentData.address || torrentData.infohash}${mid.mainPath}`, 'Link': `<bt://${torrentData.address || torrentData.infohash}${mid.mainPath}>; rel="canonical"`, 'Content-Type': mainRes, 'Content-Length': String(torrentData.length)}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><h1>${torrentData.infohash}</h1>${torrentData.files.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>` : JSON.stringify(torrentData.files.map(file => { return file.urlPath }))})
-        } else if (Array.isArray(torrentData)) {
-          let checkLength = 0
-          torrentData.forEach((data) => {checkLength = checkLength + data.length})
-          return sendTheData(signal, {status: 200, headers: {'X-Link': `bt://${mid.mainHost}${mid.mainPath}`, 'Link': `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`, 'Content-Type': mainRes, 'Content-Length': String(checkLength)}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><h1>Directory</h1><p><a href='../'>..</a></p>${torrentData.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>` : JSON.stringify(torrentData.map(file => { return file.urlPath }))})
+        if (Array.isArray(torrentData)) {
+          const useHeaders = { 'Content-Length': 0, 'Accept-Ranges': 'bytes', 'X-Downloaded': 0, 'X-Link': `bt://${mid.mainHost}${mid.mainPath}` }
+          useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
+          torrentData.forEach((data) => {
+            useHeaders['Content-Length'] = useHeaders['Content-Length'] + data.length
+            useHeaders['X-Downloaded'] = useHeaders['X-Downloaded'] + data.downloaded
+          })
+          useHeaders['Content-Type'] = mainRes
+          useHeaders['Content-Length'] = String(useHeaders['Content-Length'])
+          useHeaders['X-Downloaded'] = String(useHeaders['X-Downloaded'])
+          return sendTheData(signal, {status: 200, headers: useHeaders, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><h1>Directory</h1><p><a href='../'>..</a></p>${torrentData.map(file => { return `<p><a href='${file.urlPath}'>${file.name}</a></p>` })}</div></body></html>` : JSON.stringify(torrentData.map(file => { return file.urlPath }))})
         } else if(torrentData.createReadStream){
           const mainRange = reqHeaders.has('Range') || reqHeaders.has('range')
           if (mainRange) {
