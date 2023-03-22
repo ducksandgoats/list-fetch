@@ -1,6 +1,6 @@
 # list-Fetch
 
-method: `HEAD` - does not return a body, only returns headers
+method: `HEAD` - does not return a body, only returns headers<br>
 hostname:
 * `_` - user's own data
     path:
