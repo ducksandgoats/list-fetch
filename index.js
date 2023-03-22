@@ -1,6 +1,6 @@
 module.exports = async function makeBTFetch (opts = {}) {
   const {makeRoutedFetch} = await import('make-fetch')
-  const {Readable} = require('stream')
+  const fs = require('fs')
   const {fetch, router} = makeRoutedFetch({onNotFound: handleEmpty, onError: handleError})
   // const streamToIterator = require('stream-async-iterator')
   const mime = require('mime/lite')
@@ -233,7 +233,7 @@ module.exports = async function makeBTFetch (opts = {}) {
           useHeaders['X-Link'] = `bt://${mid.mainHost}${mid.mainPath}`
           useHeaders['Link'] = `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`
           useHeaders['Content-Length'] = useHeaders['X-length']
-          return sendTheData(signal, {status: 200, headers: useHeaders, body: Readable.from(checkMain.file)})
+          return sendTheData(signal, {status: 200, headers: useHeaders, body: fs.createReadStream(checkMain.file)})
         } else {
           return sendTheData(signal, {status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>could not find the data</p></div></body></html>` : JSON.stringify('could not find the data')})
         }
