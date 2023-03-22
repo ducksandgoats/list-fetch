@@ -1,5 +1,6 @@
 module.exports = async function makeBTFetch (opts = {}) {
   const {makeRoutedFetch} = await import('make-fetch')
+  const {Readable} = require('stream')
   const {fetch, router} = makeRoutedFetch({onNotFound: handleEmpty, onError: handleError})
   // const streamToIterator = require('stream-async-iterator')
   const mime = require('mime/lite')
@@ -121,12 +122,43 @@ module.exports = async function makeBTFetch (opts = {}) {
     // const mainReq = !reqHeaders.accept || !reqHeaders.accept.includes('application/json')
     // const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
     if (mid.mainQuery) {
-      if(reqHeaders.has('x-data') || searchParams.has('x-data')){
-        const torrentData = await app.torrentData(JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data')))
-        return sendTheData(signal, {status: 200, headers: {'X-Length': `${torrentData.length}`, 'X-Count': `${torrentData.count}`}, body: ''})
+      if(mid.mainPath === '/'){
+        if(reqHeaders.has('x-data') || searchParams.has('x-data')){
+          const parseTheData = JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data'))
+          const torrentData = await app.torrentData(parseTheData)
+          const useHeaders = {}
+          const useCount = torrentData.length
+          let useLength = 0
+          for(const test of torrentData){
+            if(test.length){
+              useLength = useLength + test.length
+            }
+          }
+          useHeaders['X-Count'] = useCount
+          if(useLength){
+            useHeaders['X-Length'] = useLength
+          }
+          return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+        } else {
+          const torrentData = await app.authorData()
+          const useHeaders = {}
+          const useCount = torrentData.length
+          let useLength = 0
+          for(const test of torrentData){
+            useLength = useLength + test.length
+          }
+          useHeaders['X-Count'] = useCount
+          useHeaders['X-Length'] = useLength
+          return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+        }
       } else {
-        const torrentData = await app.authorData()
-        return sendTheData(signal, {status: 200, headers: {'X-Length': `${torrentData.length}`, 'X-Count': `${torrentData.count}`}, body: ''})
+        const checkMain = await app.checkUserData(mid.mainPath)
+        const useHeaders = {}
+        if(checkMain.stat.type === 'folder'){
+          useHeaders['X-Count'] = checkMain.folder.length
+        }
+        useHeaders['X-Length'] = checkMain.stat.size
+        return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
       }
     } else {
       const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
@@ -137,7 +169,7 @@ module.exports = async function makeBTFetch (opts = {}) {
         const torrentData = await app.loadTorrent(mid.mainId, mid.mainPath, useOpts)
         if (torrentData) {
           if (Array.isArray(torrentData)) {
-            const useHeaders = { 'Content-Length': 0, 'Accept-Ranges': 'bytes', 'X-Downloaded': 0, 'X-Link': `bt://${mid.mainHost}${mid.mainPath}` }
+            const useHeaders = { 'Content-Length': 0, 'X-Downloaded': 0, 'X-Link': `bt://${mid.mainHost}${mid.mainPath}` }
             useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
             torrentData.forEach((data) => {
               useHeaders['Content-Length'] = useHeaders['Content-Length'] + data.length
@@ -165,7 +197,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     }
   }
   
-  async function handleGet(request) { 
+  async function handleGet(request) {
     const { url, method, headers: reqHeaders, body, signal } = request
 
     if(signal){
@@ -180,12 +212,31 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
     if (mid.mainQuery) {
-      if(reqHeaders.has('x-data') || searchParams.has('x-data')){
-        const torrentData = await app.torrentData(JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data')))
-        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
+      if(mid.mainPath === '/'){
+        if(reqHeaders.has('x-data') || searchParams.has('x-data')){
+          const torrentData = await app.torrentData(JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data')))
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
+        } else {
+          const torrentData = await app.authorData()
+          return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
+        }
       } else {
-        const torrentData = await app.authorData()
-        return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
+        const checkMain = await app.checkUserData(mid.mainPath)
+        const useHeaders = {}
+        if(checkMain.stat.type === 'folder'){
+          useHeaders['X-length'] = checkMain.stat.size
+          useHeaders['X-Count'] = checkMain.folder.length
+          return sendTheData(signal, {status: 200, headers: useHeaders, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><h1>Directory</h1><p><a href='../'>..</a></p>${checkMain.folder.map((data) => {return `<p>${data}</p>`})}</div></body></html>` : JSON.stringify(checkMain.folder)})
+        } else if(checkMain.stat.type === 'file'){
+          useHeaders['X-length'] = checkMain.stat.size
+          useHeaders['Content-Type'] = getMimeType(mid.mainPath)
+          useHeaders['X-Link'] = `bt://${mid.mainHost}${mid.mainPath}`
+          useHeaders['Link'] = `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`
+          useHeaders['Content-Length'] = useHeaders['X-length']
+          return sendTheData(signal, {status: 200, headers: useHeaders, body: Readable.from(checkMain.file)})
+        } else {
+          return sendTheData(signal, {status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>could not find the data</p></div></body></html>` : JSON.stringify('could not find the data')})
+        }
       }
     } else {
       const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
@@ -294,7 +345,8 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
     if (mid.mainQuery) {
-      return sendTheData(signal, { status: 400, headers: { 'Content-Type': mainRes }, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>must not use underscore</p></div></body></html>` : JSON.stringify('must not use underscore') })
+      const torrentData = await app.trashUserData(mid.mainPath)
+      return sendTheData(signal, { status: 200, headers: { 'Content-Type': mainRes }, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>${torrentData}</p></div></body></html>` : JSON.stringify(torrentData) })
     } else {
       const torrentData = await app.shredTorrent(mid.mainId, mid.mainPath, {})
       const useHead = {}
