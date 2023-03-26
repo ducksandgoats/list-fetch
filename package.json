@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/ducksandgoats/list-fetch#readme",
   "dependencies": {
-    "make-fetch": "^3.1.1",
+    "make-fetch": "github:ducksandgoats/make-fetch",
     "mime": "^3.0.0",
     "range-parser": "^1.2.1",
     "torrentz": "^10.0.9"
