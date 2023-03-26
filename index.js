@@ -138,7 +138,7 @@ module.exports = async function makeBTFetch (opts = {}) {
           if(useLength){
             useHeaders['X-Length'] = useLength
           }
-          return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+          return sendTheData(signal, {status: 200, headers: useHeaders})
         } else {
           const torrentData = await app.authorData()
           const useHeaders = {}
@@ -149,7 +149,7 @@ module.exports = async function makeBTFetch (opts = {}) {
           }
           useHeaders['X-Count'] = useCount
           useHeaders['X-Length'] = useLength
-          return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+          return sendTheData(signal, {status: 200, headers: useHeaders})
         }
       } else {
         const checkMain = await app.checkUserData(mid.mainPath)
@@ -158,13 +158,13 @@ module.exports = async function makeBTFetch (opts = {}) {
           useHeaders['X-Count'] = checkMain.folder.length
         }
         useHeaders['X-Length'] = checkMain.stat.size
-        return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+        return sendTheData(signal, {status: 200, headers: useHeaders})
       }
     } else {
       const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
       if (reqHeaders.has('x-copy') || searchParams.has('x-copy')) {
         const torrentData = await app.userTorrent(mid.mainId, mid.mainPath, { ...useOpts, id: JSON.parse(reqHeaders.get('x-copy') || searchParams.get('x-copy')) })
-        return sendTheData(signal, { status: 200, headers: { 'X-Path': torrentData }, body: '' })
+        return sendTheData(signal, { status: 200, headers: { 'X-Path': torrentData } })
       } else {
         const torrentData = await app.loadTorrent(mid.mainId, mid.mainPath, useOpts)
         if (torrentData) {
@@ -176,7 +176,7 @@ module.exports = async function makeBTFetch (opts = {}) {
               useHeaders['X-Downloaded'] = useHeaders['X-Downloaded'] + data.downloaded
             })
 
-            sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+            sendTheData(signal, {status: 200, headers: useHeaders})
           } else if(torrentData.createReadStream){
             const useHeaders = {}
             useHeaders['Content-Type'] = getMimeType(torrentData.path)
@@ -186,12 +186,12 @@ module.exports = async function makeBTFetch (opts = {}) {
             useHeaders['X-Link'] = `bt://${mid.mainHost}${mid.mainPath}`
             useHeaders['Link'] = `<bt://${useHeaders['X-Link']}>; rel="canonical"`
 
-            return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+            return sendTheData(signal, {status: 200, headers: useHeaders})
           } else {
-            return sendTheData(signal, { status: 400, headers: { 'X-Error': 'did not find any data' }, body: '' })
+            return sendTheData(signal, { status: 400, headers: { 'X-Error': 'did not find any data' } })
           }
         } else {
-          return sendTheData(signal, {status: 400, headers: {'X-Error': 'did not find any data'}, body: ''})
+          return sendTheData(signal, {status: 400, headers: {'X-Error': 'did not find any data'}})
         }
       }
     }
