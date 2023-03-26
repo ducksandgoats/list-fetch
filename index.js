@@ -161,7 +161,8 @@ module.exports = async function makeBTFetch (opts = {}) {
         return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
       }
     } else {
-      const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
+      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
+      const useOpts = { ...useOpt, timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
       if (reqHeaders.has('x-copy') || searchParams.has('x-copy')) {
         const torrentData = await app.userTorrent(mid.mainId, mid.mainPath, { ...useOpts, id: JSON.parse(reqHeaders.get('x-copy') || searchParams.get('x-copy')) })
         return sendTheData(signal, { status: 200, headers: { 'X-Path': torrentData }, body: '' })
@@ -239,7 +240,8 @@ module.exports = async function makeBTFetch (opts = {}) {
         }
       }
     } else {
-      const useOpts = { timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
+      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
+      const useOpts = { ...useOpt, timeout: reqHeaders.has('x-timer') || searchParams.has('x-timer') ? reqHeaders.get('x-timer') !== '0' || searchParams.get('x-timer') !== '0' ? Number(reqHeaders.get('x-timer') || searchParams.get('x-timer')) * 1000 : undefined : btTimeout }
       const torrentData = await app.loadTorrent(mid.mainId, mid.mainPath, useOpts)
       if(torrentData){
         if (Array.isArray(torrentData)) {
@@ -277,7 +279,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     }
   }
   
-  async function handlePost(request) { 
+  async function handlePost(request) {
     const { url, method, headers: reqHeaders, body, signal } = request
 
     if(signal){
@@ -292,12 +294,16 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
     if (mid.mainQuery) {
+      if (!reqHeaders.has('x-update') && !searchParams.has('x-update')) {
+        return sendTheData(signal, {status: 400, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainHost}</title></head><body><div><p>X-Update header is needed</p></div></body></html>` : JSON.stringify('X-Update header is needed')})
+      }
+      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
         const useOpts = {
           count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null,
-          opt: reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : null
+          opt: useOpt
         }
       const useBody = reqHeaders.has('content-type') && reqHeaders.get('content-type').includes('multipart/form-data') ? handleFormData(await request.formData()) : body
-      const torrentData = (reqHeaders.has('x-update') && JSON.parse(reqHeaders.get('x-update'))) || (searchParams.has('x-update') && JSON.parse(searchParams.get('x-update'))) ? await app.publishTorrent({ address: null, secret: null }, mid.mainPath, useBody, useOpts) : await app.publishTorrent({ infohash: null }, mid.mainPath, useBody, useOpts)
+      const torrentData = JSON.parse(reqHeaders.get('x-update')) || JSON.parse(searchParams.get('x-update')) ? await app.publishTorrent({ address: null, secret: null }, mid.mainPath, useBody, useOpts) : await app.publishTorrent({ infohash: null }, mid.mainPath, useBody, useOpts)
       const useHeaders = {}
       for (const test of ['sequence', 'name', 'infohash', 'dir', 'pair', 'secret', 'address']) {
         if (torrentData[test] || typeof(torrentData[test]) === 'number') {
@@ -310,9 +316,10 @@ module.exports = async function makeBTFetch (opts = {}) {
       useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
       return sendTheData(signal, {status: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders}, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved)})
     } else {
+      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
         const useOpts = {
           count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null,
-          opt: reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : null
+          opt: useOpt
         }
       const useBody = reqHeaders.has('content-type') && reqHeaders.get('content-type').includes('multipart/form-data') ? handleFormData(await request.formData()) : body
       const torrentData = await app.publishTorrent(mid.mainId, mid.mainPath, useBody, useOpts)
@@ -345,10 +352,20 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
     if (mid.mainQuery) {
+      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
+        const useOpts = {
+          count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null,
+          opt: useOpt
+        }
       const torrentData = await app.trashUserData(mid.mainPath)
-      return sendTheData(signal, { status: 200, headers: { 'Content-Type': mainRes }, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>${torrentData}</p></div></body></html>` : JSON.stringify(torrentData) })
+      return sendTheData(signal, { status: 200, headers: { 'Status': useOpts.count ? 'true': 'false', 'Content-Type': mainRes }, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>${torrentData}</p></div></body></html>` : JSON.stringify(torrentData) })
     } else {
-      const torrentData = await app.shredTorrent(mid.mainId, mid.mainPath, {})
+      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
+        const useOpts = {
+          count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null,
+          opt: useOpt
+      }
+      const torrentData = await app.shredTorrent(mid.mainId, mid.mainPath, useOpts)
       const useHead = {}
       for (const test of ['id', 'path', 'infohash', 'dir', 'name', 'sequence', 'pair', 'address', 'secret']) {
         if (torrentData[test]) {
