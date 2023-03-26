@@ -1,5 +1,8 @@
 # list-fetch
 
+example of how a url looks like using list-fetch
+`bt://someAddressOrInfohashAsHostname/some/path`
+
 `_` - does different things depending on the http method
 `address` - a public key that is 64 characters that is used as an address
 `infohash` - a identifier for torrents that is 40 characters
