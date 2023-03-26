@@ -175,8 +175,8 @@ module.exports = async function makeBTFetch (opts = {}) {
               useHeaders['Content-Length'] = useHeaders['Content-Length'] + data.length
               useHeaders['X-Downloaded'] = useHeaders['X-Downloaded'] + data.downloaded
             })
-
-            sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+            
+            return sendTheData(signal, { status: 200, headers: useHeaders, body: '' })
           } else if(torrentData.createReadStream){
             const useHeaders = {}
             useHeaders['Content-Type'] = getMimeType(torrentData.path)
