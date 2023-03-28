@@ -124,8 +124,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     if (mid.mainQuery) {
       if(mid.mainPath === '/'){
         if(reqHeaders.has('x-data') || searchParams.has('x-data')){
-          const parseTheData = JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data'))
-          const torrentData = await app.torrentData(parseTheData)
+          const torrentData = await app.torrentData(JSON.parse(reqHeaders.get('x-data') || searchParams.get('x-data')))
           const useHeaders = {}
           const useCount = torrentData.length
           let useLength = 0
@@ -152,13 +151,7 @@ module.exports = async function makeBTFetch (opts = {}) {
           return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
         }
       } else {
-        const checkMain = await app.checkUserData(mid.mainPath)
-        const useHeaders = {}
-        if(checkMain.stat.type === 'folder'){
-          useHeaders['X-Count'] = checkMain.folder.length
-        }
-        useHeaders['X-Length'] = checkMain.stat.size
-        return sendTheData(signal, {status: 200, headers: useHeaders, body: ''})
+        return sendTheData(signal, {status: 400, headers: {'X-Status': 'can not have a path'}, body: ''})
       }
     } else {
       const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
@@ -222,22 +215,7 @@ module.exports = async function makeBTFetch (opts = {}) {
           return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div>${torrentData.map(htmlIden)}</div></body></html>` : JSON.stringify(torrentData.map(jsonIden))})
         }
       } else {
-        const checkMain = await app.checkUserData(mid.mainPath)
-        const useHeaders = {}
-        if(checkMain.stat.type === 'folder'){
-          useHeaders['X-length'] = checkMain.stat.size
-          useHeaders['X-Count'] = checkMain.folder.length
-          return sendTheData(signal, {status: 200, headers: useHeaders, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><h1>Directory</h1><p><a href='../'>..</a></p>${checkMain.folder.map((data) => {return `<p>${data}</p>`})}</div></body></html>` : JSON.stringify(checkMain.folder)})
-        } else if(checkMain.stat.type === 'file'){
-          useHeaders['X-length'] = checkMain.stat.size
-          useHeaders['Content-Type'] = getMimeType(mid.mainPath)
-          useHeaders['X-Link'] = `bt://${mid.mainHost}${mid.mainPath}`
-          useHeaders['Link'] = `<bt://${mid.mainHost}${mid.mainPath}>; rel="canonical"`
-          useHeaders['Content-Length'] = useHeaders['X-length']
-          return sendTheData(signal, {status: 200, headers: useHeaders, body: fs.createReadStream(checkMain.file)})
-        } else {
-          return sendTheData(signal, {status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>could not find the data</p></div></body></html>` : JSON.stringify('could not find the data')})
-        }
+        return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>can not have a path</p></div></body></html>` : JSON.stringify('can not have a path') })
       }
     } else {
       const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
@@ -352,13 +330,7 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
     if (mid.mainQuery) {
-      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
-      const useOpts = {
-          ...useOpt,
-          count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null
-        }
-      const torrentData = await app.trashUserData(mid.mainPath)
-      return sendTheData(signal, { status: 200, headers: { 'Status': useOpts.count ? 'true': 'false', 'Content-Type': mainRes }, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>${torrentData}</p></div></body></html>` : JSON.stringify(torrentData) })
+      return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>can not have a path</p></div></body></html>` : JSON.stringify('can not have a path') })
     } else {
       const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
       const useOpts = {
