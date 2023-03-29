@@ -86,22 +86,6 @@ module.exports = async function makeBTFetch (opts = {}) {
     return mimeType
   }
 
-  function idFromHost(hn, hs, sp) {
-    if (hn.mainQuery) {
-      if (hs.has('x-update') || sp.has('x-update')) {
-        if (JSON.parse(hs.get('x-update') || sp.get('x-update'))) {
-          return { address: null, secret: null }
-        } else {
-          return { infohash: null }
-        }
-      } else {
-        return null
-      }
-    } else {
-      return hn.mainId
-    }
-  }
-
   function formatReq (hostname, pathname, extra) {
 
     // let mainType = hostname[0] === hostType || hostname[0] === sideType ? hostname[0] : ''
@@ -287,17 +271,27 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainReq = !reqHeaders.has('accept') || !reqHeaders.get('accept').includes('application/json')
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
-    const useData = idFromHost(mid, reqHeaders, searchParams)
-    if (!useData) {
-      return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>invalid data</p></div></body></html>` : JSON.stringify('invalid data') })
+    if (mid.mainQuery) {
+      if (reqHeaders.has('x-update') || searchParams.has('x-update')) {
+        if (JSON.parse(reqHeaders.get('x-update') || searchParams.get('x-update'))) {
+          mid.mainId = { address: null, secret: null }
+        } else {
+          mid.mainId = { infohash: null }
+        }
+      } else {
+        return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>invalid data</p></div></body></html>` : JSON.stringify('invalid data') })
+      }
+    } else {
+      return mid.mainId
     }
+
       const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
       const useOpts = {
           ...useOpt,
           count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null,
         }
       const useBody = reqHeaders.has('content-type') && reqHeaders.get('content-type').includes('multipart/form-data') ? handleFormData(await request.formData()) : body
-      const torrentData = await app.publishTorrent(useData, mid.mainPath, useBody, useOpts)
+      const torrentData = await app.publishTorrent(mid.mainId, mid.mainPath, useBody, useOpts)
       const useHeaders = {}
       for (const test of ['sequence', 'name', 'infohash', 'dir', 'pair', 'secret', 'address']) {
         if (torrentData[test] || typeof(torrentData[test]) === 'number') {
