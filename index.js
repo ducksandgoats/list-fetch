@@ -86,6 +86,22 @@ module.exports = async function makeBTFetch (opts = {}) {
     return mimeType
   }
 
+  function idFromHost(hn, hs, sp) {
+    if (hn.mainQuery) {
+      if (hs.has('x-update') || sp.has('x-update')) {
+        if (JSON.parse(hs.get('x-update') || sp.get('x-update'))) {
+          return { address: null, secret: null }
+        } else {
+          return { infohash: null }
+        }
+      } else {
+        return null
+      }
+    } else {
+      return hn.mainId
+    }
+  }
+
   function formatReq (hostname, pathname, extra) {
 
     // let mainType = hostname[0] === hostType || hostname[0] === sideType ? hostname[0] : ''
@@ -271,36 +287,17 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainReq = !reqHeaders.has('accept') || !reqHeaders.get('accept').includes('application/json')
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
-    if (mid.mainQuery) {
-      if (!reqHeaders.has('x-update') && !searchParams.has('x-update')) {
-        return sendTheData(signal, {status: 400, headers: {'Content-Type': mainRes}, body: mainReq ? `<html><head><title>${mid.mainHost}</title></head><body><div><p>X-Update header is needed</p></div></body></html>` : JSON.stringify('X-Update header is needed')})
-      }
-      const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
-      const useOpts = {
-          ...useOpt,
-          count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null
-        }
-      const useBody = reqHeaders.has('content-type') && reqHeaders.get('content-type').includes('multipart/form-data') ? handleFormData(await request.formData()) : body
-      const torrentData = JSON.parse(reqHeaders.get('x-update')) || JSON.parse(searchParams.get('x-update')) ? await app.publishTorrent({ address: null, secret: null }, mid.mainPath, useBody, useOpts) : await app.publishTorrent({ infohash: null }, mid.mainPath, useBody, useOpts)
-      const useHeaders = {}
-      for (const test of ['sequence', 'name', 'infohash', 'dir', 'pair', 'secret', 'address']) {
-        if (torrentData[test] || typeof(torrentData[test]) === 'number') {
-          useHeaders['X-' + test.charAt(0).toUpperCase() + test.slice(1)] = torrentData[test]
-        }
-      }
-      const useIden = torrentData.address || torrentData.infohash
-      torrentData.saved = 'bt://' + path.join(useIden, torrentData.saved).replace(/\\/g, '/')
-      useHeaders['X-Link'] = `bt://${useIden}${torrentData.path}`
-      useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
-      return sendTheData(signal, {status: 200, headers: {'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders}, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved)})
-    } else {
+    const useData = idFromHost(mid, reqHeaders, searchParams)
+    if (!useData) {
+      return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>invalid data</p></div></body></html>` : JSON.stringify('invalid data') })
+    }
       const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
       const useOpts = {
           ...useOpt,
           count: reqHeaders.has('x-version') || searchParams.has('x-version') ? Number(reqHeaders.get('x-version') || searchParams.get('x-version')) : null,
         }
       const useBody = reqHeaders.has('content-type') && reqHeaders.get('content-type').includes('multipart/form-data') ? handleFormData(await request.formData()) : body
-      const torrentData = await app.publishTorrent(mid.mainId, mid.mainPath, useBody, useOpts)
+      const torrentData = await app.publishTorrent(useData, mid.mainPath, useBody, useOpts)
       const useHeaders = {}
       for (const test of ['sequence', 'name', 'infohash', 'dir', 'pair', 'secret', 'address']) {
         if (torrentData[test] || typeof(torrentData[test]) === 'number') {
@@ -312,7 +309,6 @@ module.exports = async function makeBTFetch (opts = {}) {
       useHeaders['X-Link'] = `bt://${useIden}${torrentData.path}`
       useHeaders['Link'] = `<${useHeaders['X-Link']}>; rel="canonical"`
       return sendTheData(signal, { status: 200, headers: { 'Content-Length': String(torrentData.length), 'Content-Type': mainRes, ...useHeaders }, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${JSON.stringify(torrentData.saved)}</div></body></html>` : JSON.stringify(torrentData.saved) })
-    }
   }
   
   async function handleDelete(request) {
@@ -330,8 +326,8 @@ module.exports = async function makeBTFetch (opts = {}) {
     const mainRes = mainReq ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'
 
     if (mid.mainQuery) {
-      return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>can not have a path</p></div></body></html>` : JSON.stringify('can not have a path') })
-    } else {
+      return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>invalid query</p></div></body></html>` : JSON.stringify('invalid query') })
+    }
       const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
       const useOpts = {
           ...useOpt,
@@ -350,7 +346,6 @@ module.exports = async function makeBTFetch (opts = {}) {
       useHead['Link'] = `<${useHead['X-Link']}>; rel="canonical"`
 
       return sendTheData(signal, {status: 200, headers: {'Content-Type': mainRes, ...useHead}, body: mainReq ? `<html><head><title>${useIden}</title></head><body><div>${useLink}</div></body></html>` : JSON.stringify(useLink)})
-    }
   }
   
   router.head('bt://*/**', handleHead)
