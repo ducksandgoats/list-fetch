@@ -281,8 +281,6 @@ module.exports = async function makeBTFetch (opts = {}) {
       } else {
         return sendTheData(signal, { status: 400, headers: mainRes, body: mainReq ? `<html><head><title>${mid.mainLink}</title></head><body><div><p>invalid data</p></div></body></html>` : JSON.stringify('invalid data') })
       }
-    } else {
-      return mid.mainId
     }
 
       const useOpt = reqHeaders.has('x-opt') || searchParams.has('x-opt') ? JSON.parse(reqHeaders.get('x-opt') || decodeURIComponent(searchParams.get('x-opt'))) : {}
