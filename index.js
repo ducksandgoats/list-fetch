@@ -357,13 +357,13 @@ module.exports = async function makeBTFetch (opts = {}) {
         })
       })
     }
+    app.checkId.clear()
+    clearInterval(app.session)
     return await new Promise((resolve, reject) => {
       app.webtorrent.destroy(error => {
         if (error) {
           reject(error)
         } else {
-          app.checkId.clear()
-          clearInterval(app.session)
           resolve()
         }
       })
