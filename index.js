@@ -346,6 +346,17 @@ module.exports = async function makeBTFetch (opts = {}) {
   router.delete('bt://*/**', handleDelete)
 
   fetch.close = async () => {
+    for (const data of app.webtorrent.torrents) {
+      await new Promise((resolve, reject) => {
+        data.destroy({ destroyStore: false }, (err) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve()
+          }
+        })
+      })
+    }
     return await new Promise((resolve, reject) => {
       app.webtorrent.destroy(error => {
         if (error) {
